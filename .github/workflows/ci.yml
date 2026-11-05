@@ -29,6 +29,7 @@ jobs:
       - name: Build
         run: pnpm run build
       - name: Install browser
+        timeout-minutes: 5
         run: pnpm exec playwright install --with-deps chromium
       - name: Browser and rendering tests
         run: pnpm run test:e2e

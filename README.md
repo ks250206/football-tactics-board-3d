@@ -117,7 +117,7 @@ pnpm exec playwright install chromium
 pnpm run test:e2e
 ```
 
-CIは同じNode・pnpmの固定版と `pnpm install --frozen-lockfile` を使用します。依存のビルドスクリプトは `pnpm-workspace.yaml` で明示したものだけを許可します。
+ブラウザテストはNode 26でのブラウザ展開処理に対応したPlaywright 1.64.1を使用します。CIは同じNode・pnpmの固定版と `pnpm install --frozen-lockfile` を使用します。依存のビルドスクリプトは `pnpm-workspace.yaml` で明示したものだけを許可します。
 
 単体テストは補間、角度ラップ、保持、パス、視界、入力検証、配置、守備、向き操作を対象とします。PlaywrightではWebGL起動、編集、自動キー、再生、JSON、モバイル表示を確認し、`artifacts/` にスクリーンショットを作成します。CI成果物には配信用ビルド、テスト画像、ソースアーカイブを含めます。
 
