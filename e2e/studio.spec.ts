@@ -15,6 +15,9 @@ test('renders WebGL, changes camera and produces studio screenshots',async({page
 
 test('edits body and gaze independently, scrubs, auto-keys and undoes',async({page})=>{
   await page.goto('/');await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-ready','true');
+  // This test exercises authored body/neck independence rather than automatic ball gaze.
+  await page.getByRole('button',{name:'ボールを自動で見る',exact:true}).click();
+  await page.getByTestId('timeline-rail').scrollIntoViewIfNeeded();
   const rail=await page.getByTestId('timeline-rail').boundingBox();if(!rail)throw new Error('Missing timeline');
   await page.mouse.click(rail.x+rail.width*.18,rail.y+6);
   const before=await page.getByTestId('head-slider').inputValue();
@@ -33,7 +36,7 @@ test('edits body and gaze independently, scrubs, auto-keys and undoes',async({pa
 
 test('drags a player, authors a pass and exports JSON, PNG and video',async({page})=>{
   await page.goto('/');await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-ready','true');
-  const player=page.getByTestId('player-home-6');const rect=await player.boundingBox();if(!rect)throw new Error('Missing player');
+  const player=page.getByTestId('player-home-6');await player.scrollIntoViewIfNeeded();const rect=await player.boundingBox();if(!rect)throw new Error('Missing player');
   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.down();await page.mouse.move(rect.x+rect.width/2+25,rect.y+rect.height/2+10,{steps:6});await page.mouse.up();
   await page.getByTestId('pass-button').click();await page.getByTestId('player-home-7').click();await expect(page.getByRole('status')).toContainText('パスを追加');
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'JSONを書き出す'}).click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('touchline-sequence.json');
