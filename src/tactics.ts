@@ -447,7 +447,7 @@ export function illustrativeXg(ball: { x: number; z: number; y: number }, team: 
       ? 0
       : Math.atan2(7.32 * forward, forward * forward + ball.z * ball.z - 3.66 * 3.66);
   const value =
-    forward <= 0 || Math.abs(ball.z) > 34 || ball.y > 0.5
+    Math.abs(ball.x) >= 52.5 || Math.abs(ball.z) > 34 || ball.y > 0.5
       ? null
       : 1 / (1 + Math.exp(-(-1.5 - 0.08 * d + 0.9 * angle)));
   return { value, distance: d, angle: angle / RAD };

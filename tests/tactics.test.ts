@@ -214,6 +214,8 @@ describe("phases and viewing", () => {
     expect(near).toEqual(illustrativeXg({ x: -41, z: 0, y: 0.11 }, "away"));
     expect(near.angle * RAD).toBeGreaterThan(0);
     expect(illustrativeXg({ x: 52.5, z: 0, y: 0.11 }, "home").value).toBe(null);
+    expect(illustrativeXg({ x: -53, z: 0, y: 0.11 }, "home").value).toBe(null);
+    expect(illustrativeXg({ x: 53, z: 0, y: 0.11 }, "away").value).toBe(null);
     expect(illustrativeXg({ x: 41, z: 0, y: 2 }, "home").value).toBe(null);
   });
 });
