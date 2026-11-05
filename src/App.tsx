@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { analyse, clamp, clone, makePass, parseProject, RAD, removeKeyframe, sample, upsert, wrap, type Pose, type Project, type ViewSettings } from './core';
 import { createScenario as createDemo } from './scenarios';
+import { createCanvasRecorder } from './recording';
 import { Board } from './Board';
 import { Timeline } from './Timeline';
 import { Icon } from './Icon';
@@ -91,12 +92,12 @@ export default function App(){
   const toggleRecord=()=>{
     if(recorder.current?.state==='recording'){recorder.current.stop();setPlaying(false);return;}
     const canvas=stage.current?.canvas();if(!canvas||typeof canvas.captureStream!=='function'||typeof MediaRecorder==='undefined'){setToast('このブラウザでは動画録画を利用できません。PNG保存をご利用ください。');return;}
-    const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
+    const mime=['video/webm;codecs=vp8','video/webm;codecs=vp9','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
     if(!mime){setToast('対応する動画形式がありません。Chrome / Edgeでお試しください。');return;}
     try{
-      stream.current=canvas.captureStream(30);const rec=new MediaRecorder(stream.current,{mimeType:mime,videoBitsPerSecond:8_000_000});const chunks:BlobPart[]=[];
+      const session=createCanvasRecorder(canvas,mime);stream.current=session.stream;const rec=session.recorder;const chunks:BlobPart[]=[];
       rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-      rec.onstop=()=>{if(chunks.length)saveBlob(new Blob(chunks,{type:mime}),`touchline-player-view.${mime.includes('mp4')?'mp4':'webm'}`);stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;recorder.current=null;setRecording(false);setToast('3D映像を保存しました。音声・操作パネルは含まれません。');};
+      rec.onstop=()=>{if(chunks.length)saveBlob(new Blob(chunks,{type:mime}),`touchline-player-view.${mime.includes('mp4')?'mp4':'webm'}`);stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;recorder.current=null;setRecording(false);setToast(chunks.length?'3D映像を保存しました。音声・操作パネルは含まれません。':'録画フレームを取得できませんでした。軽量モードで再試行してください。');};
       rec.onerror=()=>{setToast('録画に失敗しました。PNG保存をご利用ください。');if(rec.state!=='inactive')rec.stop();};
       recorder.current=rec;rec.start(250);timeRef.current=0;setTime(0);setSpeed(1);setLoop(false);setRecording(true);setPlaying(true);
     }catch(e){stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;setToast(e instanceof Error?e.message:'録画を開始できませんでした。');}

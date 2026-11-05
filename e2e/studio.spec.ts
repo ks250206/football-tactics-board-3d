@@ -41,9 +41,14 @@ test('drags a player, authors a pass and exports JSON, PNG and video',async({pag
   await expect(page.getByTestId('tactics-board')).toBeVisible();
   const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'3D映像をPNG保存',exact:true}).click();
   const png=await pngPromise;expect(png.suggestedFilename()).toMatch(/\.png$/);expect((await stat((await png.path())!)).size).toBeGreaterThan(1000);
-  await page.getByRole('button',{name:'最初から3D映像を録画',exact:true}).click();await expect(page.locator('.recording-banner')).toBeVisible();
-  await page.waitForTimeout(1500);const moviePromise=page.waitForEvent('download');await page.getByRole('button',{name:'停止して保存',exact:true}).click();
-  const movie=await moviePromise;expect(movie.suggestedFilename()).toMatch(/\.(webm|mp4)$/);expect((await stat((await movie.path())!)).size).toBeGreaterThan(1000);
+  // Observe from before recording starts; verify automatic end-of-sequence export.
+  const moviePromise=page.waitForEvent('download',{timeout:60000});
+  await page.getByRole('button',{name:'最初から3D映像を録画',exact:true}).click();
+  await expect(page.locator('.recording-banner')).toBeVisible();
+  const movie=await moviePromise;
+  expect(movie.suggestedFilename()).toMatch(/\.(webm|mp4)$/);
+  expect((await stat((await movie.path())!)).size).toBeGreaterThan(1000);
+  await expect(page.locator('.recording-banner')).toHaveCount(0);
 });
 
 test('fits a mobile viewport and keeps all editing controls available',async({page})=>{

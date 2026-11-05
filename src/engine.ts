@@ -78,6 +78,7 @@ export class TacticsEngine {
     this.path=new T.Line(new T.BufferGeometry(),new T.LineDashedMaterial({color:'#d0e5ae',dashSize:.6,gapSize:.45,transparent:true,opacity:.6}));this.scene.add(this.path);
     this.controls=new OrbitControls(this.camera,this.canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.08;this.controls.maxPolarAngle=Math.PI*.475;this.controls.minDistance=2;this.controls.maxDistance=140;this.controls.enabled=false;
     this.controls.addEventListener('change',()=>{this.needsRender=true;});
+    this.canvas.addEventListener('touchline-capture-request',()=>{this.needsRender=true;});
     this.composer=new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene,this.camera));
     if(quality==='cinematic'){
@@ -139,13 +140,13 @@ export class TacticsEngine {
     if(this.disposed)return;
     if(this.controls.enabled)this.controls.update();
     if(this.needsRender){
-      this.needsRender=false;this.apply();this.composer.render();this.canvas.dataset.ready='true';this.ticks++;
+      this.needsRender=false;this.apply();this.composer.render();this.canvas.dataset.ready='true';this.canvas.dispatchEvent(new Event('touchline-frame'));this.ticks++;
     }
     const now=performance.now();
     if(now-this.statsAt>1000){this.onStats?.(Math.round(this.ticks*1000/(now-this.statsAt)));this.statsAt=now;this.ticks=0;}
     this.animation=requestAnimationFrame(this.animate);
   };
-  capture(){this.apply();this.composer.render();return this.canvas.toDataURL('image/png');}
+  capture(){this.apply();this.composer.render();this.canvas.dispatchEvent(new Event('touchline-frame'));return this.canvas.toDataURL('image/png');}
   dispose(){
     this.disposed=true;cancelAnimationFrame(this.animation);this.resizeObserver.disconnect();this.controls.dispose();
     for(const pass of this.composer.passes)pass.dispose();this.composer.dispose();disposeObject(this.scene);this.environment.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.canvas.remove();
