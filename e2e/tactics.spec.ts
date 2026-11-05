@@ -184,8 +184,30 @@ test("controls the player with simultaneous WASD and free mouse look, sensitivit
   const pitchBefore = await page.getByLabel("視線の上下", { exact: true }).inputValue();
   const box = await page.getByTestId("scene-canvas").boundingBox();
   if (!box) throw new Error("Missing canvas");
-  // Move the mouse without a button while W remains held, including the non-locking fallback.
+  // Observe the browser's input separately from the app's response. CDP absolute
+  // moves can deliver zero relative deltas while Chromium's native lock is active.
+  const nativeLock = await page.evaluate(() => !!document.pointerLockElement);
+  await page.evaluate(() => {
+    const input = { x: 0, y: 0, events: 0 };
+    (window as any).__fpsMouseInput = input;
+    document.addEventListener("mousemove", (event) => {
+      input.x += Math.abs(event.movementX);
+      input.y += Math.abs(event.movementY);
+      input.events++;
+    });
+  });
+  // No button is held; W remains down throughout the look and movement checks.
   await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 20, { steps: 4 });
+  const input = await page.evaluate(() => (window as any).__fpsMouseInput);
+  test.info().annotations.push({ type: "mouse-input", description: JSON.stringify({ nativeLock, ...input }) });
+  if (nativeLock && (!input.x || !input.y)) {
+    // The lock is real. Supply the standard relative event at the DOM boundary
+    // only when browser automation supplied none; never mock requestPointerLock.
+    await page.getByLabel("3D操作画面", { exact: true }).dispatchEvent("mousemove", {
+      movementX: 50, movementY: 20,
+    });
+    test.info().annotations.push({ type: "native-relative-input", description: "DOM MouseEvent; CDP produced zero relative deltas under native pointer lock" });
+  }
   await expect(page.getByTestId("body-slider")).not.toHaveValue(headingBefore);
   await expect(page.getByLabel("視線の上下", { exact: true })).not.toHaveValue(pitchBefore);
   const turned = await page.getByTestId("body-slider").inputValue(),
