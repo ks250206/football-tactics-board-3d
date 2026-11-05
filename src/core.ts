@@ -13,7 +13,7 @@ export const RAD = Math.PI / 180;
 export const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const wrap = (a: number) => ((a + 180) % 360 + 360) % 360 - 180;
-export const angleLerp = (a: number, b: number, t: number) => wrap(a + wrap(b - a) * t);
+export const angleLerp = (a: number, b: number, t: number) => t <= 0 ? a : t >= 1 ? b : wrap(a + wrap(b - a) * t);
 export const clone = <T,>(x: T): T => structuredClone(x);
 export const distance = (a: {x: number; z: number}, b: {x: number; z: number}) => Math.hypot(a.x - b.x, a.z - b.z);
 export function verticalFov(horizontal: number, aspect: number) { return 2 * Math.atan(Math.tan(horizontal * RAD / 2) / Math.max(aspect, .1)) / RAD; }
@@ -32,6 +32,8 @@ export function sample(project: Project, t: number): Frame {
   while (index < frames.length - 2 && frames[index + 1].t <= t) index++;
   const a = frames[index], b = frames[Math.min(index + 1, frames.length - 1)];
   const u = a === b ? 0 : clamp((t - a.t) / (b.t - a.t), 0, 1);
+  const endpoint = u === 0 ? a : u === 1 ? b : null;
+  if (endpoint) return { t, players: clone(endpoint.players), ball: ballPosition(endpoint) };
   const players: Record<string, Pose> = {};
   for (const player of project.roster) {
     const p = a.players[player.id], q = b.players[player.id];
@@ -45,15 +47,30 @@ export function sample(project: Project, t: number): Frame {
   return frame;
 }
 
-/** All editing is an explicit pose keyframe at the playhead, never an offset to all frames. */
-export function upsert(project: Project, t: number, edit: (frame: Frame) => void): Project {
-  const next = clone(project);
-  t = Math.round(clamp(t, 0, next.duration) * 100) / 100;
-  const i = next.frames.findIndex(f => Math.abs(f.t - t) < .025);
+/** Snap nearby edits without moving the protected first/last keyframe. */
+function keyTime(project: Project, time: number): number {
+  const rounded = clamp(Math.round(time * 100) / 100, 0, project.duration);
+  return project.frames.find(f => Math.abs(f.t - rounded) < .025)?.t ?? rounded;
+}
+
+/** Pose-only insertion preserves the existing ball parabola exactly. */
+export function upsert(project: Project, time: number, edit: (frame: Frame) => void): Project {
+  const next: Project = { ...project, frames: clone(project.frames) };
+  const t = keyTime(project, time);
+  const i = next.frames.findIndex(f => f.t === t);
   const frame = i >= 0 ? next.frames[i] : sample(next, t);
-  frame.t = t;
+  if (i < 0) {
+    const right = next.frames.findIndex(f => f.t > t);
+    if (right > 0) {
+      const left = next.frames[right - 1];
+      const u = (t - left.t) / (next.frames[right].t - left.t);
+      const arc = left.ball.arc;
+      left.ball.arc = arc * u * u;
+      frame.ball.arc = arc * (1 - u) * (1 - u);
+    }
+    next.frames.push(frame);
+  }
   edit(frame);
-  if (i < 0) next.frames.push(frame);
   next.frames.sort((a, b) => a.t - b.t);
   return next;
 }
@@ -64,7 +81,8 @@ export function removeKeyframe(project: Project, t: number): Project {
 
 export function makePass(project: Project, t: number, from: string, to: string, seconds = 1.2, arc = 0): Project {
   if (from === to || !project.roster.some(p => p.id === from) || !project.roster.some(p => p.id === to)) return project;
-  const end = Math.min(project.duration, t + seconds);
+  t = keyTime(project, t);
+  const end = keyTime(project, t + seconds);
   if (end - t < .1) return project;
   let next = upsert(project, t, f => { f.ball = { ...f.ball, owner: from, arc, y: .11 }; });
   // Remove intermediate ball waypoints while preserving all intermediate player poses.
@@ -154,6 +172,15 @@ export function createDemo(kind = 'build'): Project {
       ball.owner = t <= 4.8 ? 'home-7' : t >= 7.5 ? 'home-2' : null;
       ball.x = 13; ball.z = 26; ball.arc = .05;
     }
+    // JSON has no negative zero. Keep generated data canonical before it is saved.
+    for (const pose of Object.values(players)) {
+      for (const key of ['x', 'z', 'body', 'head', 'pitch'] as const) {
+        if (Object.is(pose[key], -0)) pose[key] = 0;
+      }
+    }
+    for (const key of ['x', 'z', 'y', 'arc'] as const) {
+      if (Object.is(ball[key], -0)) ball[key] = 0;
+    }
     return { t, players, ball };
   });
   return { version: 1, name: kind === 'through' ? 'ライン間からのスルーパス' : kind === 'overlap' ? 'サイドバックのオーバーラップ' : 'ボランチの首振りと展開', duration: 12, roster, frames };
@@ -169,6 +196,7 @@ export function parseProject(text: string): Project {
   const ids = new Set<string>();
   const roster: Player[] = raw.roster.map((r: Player) => {
     if(!r || typeof r.id !== 'string' || !/^(home|away)-\d{1,2}$/.test(r.id) || ids.has(r.id) || (r.team !== 'home' && r.team !== 'away') || typeof r.role !== 'string' || r.role.length > 20) return fail();
+    if (!Number.isInteger(r.number) || !Number.isInteger(r.skin) || !r.id.startsWith(`${r.team}-`)) return fail();
     ids.add(r.id);
     return { id: r.id, team: r.team, role: r.role, number: num(r.number,1,99), height: num(r.height,1.4,2.2), skin: num(r.skin,0,4) };
   });

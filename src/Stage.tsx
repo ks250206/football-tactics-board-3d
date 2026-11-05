@@ -8,6 +8,7 @@ interface Props { project:Project; frame:Frame; selected:string; settings:ViewSe
 export const Stage=forwardRef<StageHandle,Props>(function Stage(props,ref){
   const host=useRef<HTMLDivElement>(null),engine=useRef<TacticsEngine|null>(null),current=useRef(props);
   current.current=props;
+  const rosterKey=JSON.stringify(props.project.roster);
   const [error,setError]=useState(''),[fps,setFps]=useState(0);
   const drag=useRef<{x:number;y:number;head:number;pitch:number}|null>(null);
   useImperativeHandle(ref,()=>({capture:()=>engine.current?.capture(),canvas:()=>engine.current?.canvas,fullscreen:()=>{void host.current?.parentElement?.requestFullscreen().catch(()=>{});}}),[]);
@@ -22,7 +23,7 @@ export const Stage=forwardRef<StageHandle,Props>(function Stage(props,ref){
       instance.canvas.addEventListener('webglcontextlost',lost);
       return()=>{instance.canvas.removeEventListener('webglcontextlost',lost);instance.dispose();engine.current=null;};
     }catch(e){setError(e instanceof Error?e.message:'3D描画を初期化できませんでした。');}
-  },[props.settings.quality,props.project.roster]);
+  },[props.settings.quality,rosterKey]);
   useEffect(()=>{engine.current?.update(props.project,props.frame,props.selected,props.settings);},[props.project,props.frame,props.selected,props.settings]);
   const player=props.project.roster.find(p=>p.id===props.selected)!;
   return <div className="stage-shell" data-testid="stage">
