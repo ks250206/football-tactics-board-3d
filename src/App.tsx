@@ -34,7 +34,14 @@ export default function App(){
     if(next===projectRef.current)return;
     const h=history.current,now=performance.now();
     if(!tag||h.tag!==tag||now-h.at>650){h.past.push(projectRef.current);if(h.past.length>60)h.past.shift();}
-    h.tag=tag;h.at=now;h.future=[];projectRef.current=next;setProject(next);setRevision(n=>n+1);
+    h.tag=tag;h.at=now;h.future=[];
+    // Authoring rounds key times to 0.01 s. Show that exact authored pose,
+    // not an adjacent interpolated pose (which can wrap +180 to -180).
+    if(next.frames!==projectRef.current.frames){
+      const key=next.frames.find(f=>Math.abs(f.t-timeRef.current)<.025);
+      if(key){timeRef.current=key.t;setTime(key.t);}
+    }
+    projectRef.current=next;setProject(next);setRevision(n=>n+1);
   },[]);
   const seek=useCallback((t:number)=>{setPlaying(false);const value=clamp(t,0,projectRef.current.duration);timeRef.current=value;setTime(value);},[]);
   const undo=useCallback(()=>{const h=history.current,last=h.past.pop();if(!last)return;h.future.push(projectRef.current);h.tag='';projectRef.current=last;setProject(last);setTime(t=>Math.min(t,last.duration));setPlaying(false);setRevision(n=>n+1);},[]);
@@ -52,7 +59,7 @@ export default function App(){
       timeRef.current=next;setTime(next);
       if(next<projectRef.current.duration||repeats)raf=requestAnimationFrame(tick);
     };raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
-  },[playing,speed,loop]);
+  },[playing,speed,loop,recording]);
   useEffect(()=>{setSaved('保存中…');const timeout=setTimeout(()=>{try{localStorage.setItem(STORAGE,JSON.stringify(project));setSaved('ローカル保存済み');}catch{setSaved('保存できません');setToast('ブラウザ保存に失敗しました。JSONを書き出して保存してください。');}},450);return()=>clearTimeout(timeout);},[project]);
   useEffect(()=>{if(!toast)return;const timeout=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(timeout);},[toast]);
   useEffect(()=>{
