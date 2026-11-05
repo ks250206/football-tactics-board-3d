@@ -522,7 +522,7 @@ export const LANE_ZONES: PitchZone[] = [-34, -20.16, -9.16, 9.16, 20.16].map((z,
   z,
   length: 105,
   width: [-20.16, -9.16, 9.16, 20.16, 34][i] - z,
-  color: ["#72b9e8", "#e5b86f", "#b9d88b", "#e5b86f", "#72b9e8"][i],
+  color: ["#246da8", "#65509b", "#28766f", "#65509b", "#246da8"][i],
   label: ["左ワイド", "左ハーフスペース", "中央", "右ハーフスペース", "右ワイド"][i],
 }));
 /** Full trapezoid from the goal posts to the penalty-area front corners.
@@ -534,5 +534,5 @@ export const BIELSA_ZONES = [-1, 1].map((sign) => ({
     [sign * 52.5, 3.66],
     [sign * 36, 20.16],
   ],
-  color: "#f2c35f",
+  color: "#f43f78",
 }));

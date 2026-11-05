@@ -67,7 +67,7 @@ export class TacticsEngine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,quality==='cinematic'?2:quality==='balanced'?1.5:1));
     this.renderer.outputColorSpace=T.SRGBColorSpace;
     this.renderer.toneMapping=T.AgXToneMapping;
-    this.renderer.toneMappingExposure=1.05;
+    this.renderer.toneMappingExposure=.9;
     this.renderer.shadowMap.enabled=true;
     this.renderer.shadowMap.type=T.PCFSoftShadowMap;
     this.canvas=this.renderer.domElement;this.canvas.setAttribute('aria-label','リアルタイム3Dピッチ');this.canvas.dataset.testid='scene-canvas';host.appendChild(this.canvas);
@@ -79,20 +79,20 @@ export class TacticsEngine {
     for(const player of project.roster){const athlete=createAthlete(player);this.athletes.set(player.id,athlete);this.scene.add(athlete.root);}
     this.scene.add(this.ball);
     for(const zone of LANE_ZONES){
-      const mesh=new T.Mesh(new T.PlaneGeometry(zone.length,zone.width),new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.2,depthWrite:false,side:T.DoubleSide}));
-      mesh.rotation.x=-Math.PI/2;mesh.position.set(zone.x+zone.length/2,.012,zone.z+zone.width/2);this.lanes.add(mesh);
+      const mesh=new T.Mesh(new T.PlaneGeometry(zone.length,zone.width),new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.55,depthWrite:false,side:T.DoubleSide}));
+      mesh.rotation.x=-Math.PI/2;mesh.position.set(zone.x+zone.length/2,.012,zone.z+zone.width/2);mesh.renderOrder=-30;this.lanes.add(mesh);
     }
     for(const zone of BIELSA_ZONES){
       const geometry=new T.BufferGeometry(),vertices:number[]=[];
       for(const i of [1,2])for(const index of [0,i,i+1]){const [x,z]=zone.points[index];vertices.push(x,.016,z);}
       geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
-      this.bielsa.add(new T.Mesh(geometry,new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.3,depthWrite:false,side:T.DoubleSide})));
+      const fill=new T.Mesh(geometry,new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.5,depthWrite:false,side:T.DoubleSide}));fill.renderOrder=-20;this.bielsa.add(fill);
       const border=new T.BufferGeometry().setFromPoints([...zone.points,zone.points[0]].map(([x,z])=>new T.Vector3(x,.018,z)));
-      this.bielsa.add(new T.Line(border,new T.LineBasicMaterial({color:zone.color,transparent:true,opacity:.85})));
+      const outline=new T.Line(border,new T.LineBasicMaterial({color:zone.color,transparent:true,opacity:1,depthWrite:false}));outline.renderOrder=-10;this.bielsa.add(outline);
     }
     this.scene.add(this.lanes,this.bielsa);
-    this.ring=new T.Mesh(new T.RingGeometry(.52,.55,48),new T.MeshBasicMaterial({color:'#d3f29b',transparent:true,opacity:.8,side:T.DoubleSide,depthWrite:false}));this.ring.rotation.x=-Math.PI/2;this.scene.add(this.ring);
-    this.path=new T.Line(new T.BufferGeometry(),new T.LineDashedMaterial({color:'#d0e5ae',dashSize:.6,gapSize:.45,transparent:true,opacity:.6}));this.scene.add(this.path);
+    this.ring=new T.Mesh(new T.RingGeometry(.52,.55,48),new T.MeshBasicMaterial({color:'#cbe0ff',transparent:true,opacity:.8,side:T.DoubleSide,depthWrite:false}));this.ring.rotation.x=-Math.PI/2;this.scene.add(this.ring);
+    this.path=new T.Line(new T.BufferGeometry(),new T.LineDashedMaterial({color:'#c7d7f0',dashSize:.6,gapSize:.45,transparent:true,opacity:.6}));this.scene.add(this.path);
     this.controls=new OrbitControls(this.camera,this.canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.08;this.controls.maxPolarAngle=Math.PI*.475;this.controls.minDistance=2;this.controls.maxDistance=140;this.controls.enabled=false;
     this.controls.addEventListener('change',()=>{this.needsRender=true;});
     this.canvas.addEventListener('touchline-capture-request',this.captureRequest);
