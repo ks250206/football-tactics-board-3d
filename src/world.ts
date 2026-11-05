@@ -33,7 +33,7 @@ export function createWorld(renderer:T.WebGLRenderer, quality:Quality) {
   });
   pitchMap.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
   const bump=noiseTexture();bump.repeat.set(150,100);bump.anisotropy=pitchMap.anisotropy;
-  const pitchMaterial=new T.MeshStandardMaterial({map:pitchMap,bumpMap:bump,bumpScale:.006,roughness:.97,metalness:0});
+  const pitchMaterial=new T.MeshStandardMaterial({map:pitchMap,bumpMap:bump,bumpScale:.004,roughness:.97,metalness:0,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2});
   const field=new T.Mesh(new T.PlaneGeometry(120,84),pitchMaterial);field.rotation.x=-Math.PI/2;field.receiveShadow=true;root.add(field);
   // Metre-scale vector paint stays crisp at eye height, unlike a magnified pitch texture.
   const paintVertices:number[]=[];
@@ -55,16 +55,16 @@ export function createWorld(renderer:T.WebGLRenderer, quality:Quality) {
     for(const z of [-34,34])arc(sign*52.5,z,1,sign<0?(z<0?0:-Math.PI/2):(z<0?Math.PI/2:Math.PI),sign<0?(z<0?Math.PI/2:0):(z<0?Math.PI:Math.PI*1.5));
   }
   const paintGeometry=new T.BufferGeometry();paintGeometry.setAttribute('position',new T.Float32BufferAttribute(paintVertices,3));paintGeometry.computeVertexNormals();
-  const paint=new T.MeshStandardMaterial({color:'#e4e9d6',roughness:1});
+  const paint=new T.MeshStandardMaterial({color:'#e4e9d6',roughness:1,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-12});
   const paintMesh=new T.Mesh(paintGeometry,paint);paintMesh.receiveShadow=true;root.add(paintMesh);
   for(const x of [-41.5,0,41.5]){const spot=new T.Mesh(new T.CircleGeometry(.14,20),paint);spot.rotation.x=-Math.PI/2;spot.position.set(x,.008,0);spot.receiveShadow=true;root.add(spot);}
-  const earth=new T.Mesh(new T.PlaneGeometry(4000,4000),mat('#28332c'));earth.rotation.x=-Math.PI/2;earth.position.y=-.04;root.add(earth);
+  const earth=new T.Mesh(new T.PlaneGeometry(4000,4000),mat('#28332c'));earth.rotation.x=-Math.PI/2;earth.position.y=-.5;root.add(earth);
 
   const wind={value:0};
   if(quality!=='low') {
     const blade=new T.PlaneGeometry(.006,.028,1,2);blade.translate(0,.014,0);
     const material=new T.MeshStandardMaterial({color:'#ffffff',roughness:1,side:T.DoubleSide});
-    material.onBeforeCompile=shader=>{shader.uniforms.uWind=wind;shader.vertexShader='uniform float uWind;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed.x += sin(instanceMatrix[3].x * 0.23 + instanceMatrix[3].z * 0.17 + uWind) * uv.y * uv.y * 0.004;');};
+    material.onBeforeCompile=shader=>{shader.uniforms.uWind=wind;shader.vertexShader='uniform float uWind;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed.x += sin(instanceMatrix[3].x * 0.23 + instanceMatrix[3].z * 0.17 + uWind) * uv.y * uv.y * 0.004;\nfloat grassDistance = distance(cameraPosition, (modelMatrix * instanceMatrix * vec4(0.0,0.0,0.0,1.0)).xyz);\ntransformed *= 1.0 - smoothstep(12.0,32.0,grassDistance);');};
     const grass=new T.InstancedMesh(blade,material,quality==='cinematic'?65000:24000);
     const dummy=new T.Object3D();
     for(let i=0;i<grass.count;i++) {dummy.position.set((rng()-.5)*104,.004,(rng()-.5)*67);dummy.rotation.y=rng()*Math.PI;dummy.scale.setScalar(.65+rng()*.7);dummy.updateMatrix();grass.setMatrixAt(i,dummy.matrix);grass.setColorAt(i,new T.Color('#326c2c').lerp(new T.Color('#648c40'),rng()));}

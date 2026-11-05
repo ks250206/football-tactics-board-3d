@@ -246,3 +246,94 @@ test("protects invalid saved data until an explicit backup and resume", async ({
     ),
   ).toEqual([invalid]);
 });
+
+test("locks the camera while editing others and authors selected/all-player gaze commands", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("scene-canvas")).toHaveAttribute("data-ready", "true");
+  await page.getByRole("button", { name: "ボールを自動で見る", exact: true }).click();
+  const original = await saved(page);
+  await page.getByRole("button", { name: "視点を固定", exact: true }).click();
+  const token = page.getByTestId("player-away-2");
+  await token.scrollIntoViewIfNeeded();
+  const box = await token.boundingBox();
+  if (!box) throw new Error("Missing player");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2 + 12, { steps: 4 });
+  await page.mouse.up();
+  await expect(page.getByLabel("編集する選手", { exact: true })).toHaveValue("away-2");
+  await expect(page.getByTestId("stage")).toHaveAttribute("data-camera-player", "home-6");
+  const moved = await saved(page);
+  expect(moved.frames[0].players["home-6"]).toEqual(original.frames[0].players["home-6"]);
+  expect(moved.frames[0].players["away-2"].x).not.toBe(original.frames[0].players["away-2"].x);
+  const verify = (project: any, target: "ball" | "goal", body: boolean, all: boolean) => {
+    const f = project.frames[0],
+      owner = f.ball.owner ? f.players[f.ball.owner] : null;
+    const ball = owner
+      ? {
+          x: owner.x + Math.cos((owner.body * Math.PI) / 180) * 0.48,
+          z: owner.z + Math.sin((owner.body * Math.PI) / 180) * 0.48,
+        }
+      : f.ball;
+    const roster = all ? project.roster : project.roster.filter((p: any) => p.id === "away-2");
+    for (const player of roster) {
+      const p = f.players[player.id],
+        q = target === "ball" ? ball : { x: player.team === "home" ? 52.5 : -52.5, z: 0 };
+      const yaw = (Math.atan2(q.z - p.z, q.x - p.x) * 180) / Math.PI;
+      expect(Math.abs(((p.body + p.head - yaw + 540) % 360) - 180)).toBeLessThan(0.001);
+      if (body) expect(p.head).toBe(0);
+    }
+  };
+  await page.getByRole("button", { name: "相手ゴールを見る", exact: true }).click();
+  verify(await saved(page), "goal", false, false);
+  await page.getByRole("button", { name: "体も顔も相手ゴールを見る", exact: true }).click();
+  verify(await saved(page), "goal", true, false);
+  await page.getByText("全員の向き（22人）", { exact: true }).click();
+  for (const [label, target, body] of [
+    ["全員ボールを見る", "ball", false],
+    ["全員体も顔もボールを見る", "ball", true],
+    ["全員相手ゴールを見る", "goal", false],
+    ["全員体も顔も相手ゴールを見る", "goal", true],
+  ] as const) {
+    await page.getByRole("button", { name: label, exact: true }).click();
+    verify(await saved(page), target, body, true);
+  }
+  await expect(page.getByTestId("stage")).toHaveAttribute("data-camera-player", "home-6");
+  await page.getByRole("button", { name: "この選手を視点にする", exact: true }).click();
+  await expect(page.getByTestId("stage")).toHaveAttribute("data-camera-player", "away-2");
+  await page.getByRole("button", { name: "視点を固定", exact: true }).click();
+  await page.getByTestId("player-home-9").click();
+  await expect(page.getByTestId("stage")).toHaveAttribute("data-camera-player", "home-9");
+});
+
+test("keeps the pitch continuous while orbiting and zooming at wide angles", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+  await page.goto("/");
+  await expect(page.getByTestId("scene-canvas")).toHaveAttribute("data-ready", "true");
+  await page.getByRole("button", { name: "自由", exact: true }).click();
+  const canvas = page.getByTestId("scene-canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  const box = await canvas.boundingBox();
+  if (!box) throw new Error("Missing canvas");
+  await mkdir("artifacts", { recursive: true });
+  for (const [i, dx, dy] of [
+    [0, 180, 20],
+    [1, -280, 35],
+    [2, 120, -80],
+  ]) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy, { steps: 8 });
+    await page.mouse.up();
+    await page.mouse.wheel(0, 200);
+    await page.waitForTimeout(500);
+    await canvas.screenshot({ path: `artifacts/orbit-depth-${i}.png` });
+  }
+  expect(errors.filter((e) => !e.includes("favicon.ico"))).toEqual([]);
+});

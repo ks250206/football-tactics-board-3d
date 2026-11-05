@@ -166,6 +166,32 @@ export function faceBall(pose: Pose, ball: { x: number; z: number; y: number }, 
     pitch: clamp(Math.atan2(ball.y - eye, d) / RAD, -45, 45),
   };
 }
+export type LookTarget = "ball" | "goal";
+export type LookAlignment = "gaze" | "body";
+/** Orientation-only patches keep authored positions and ball flight data intact. */
+export function orientPlayers(
+  project: Project,
+  frame: Frame,
+  ids: readonly string[],
+  target: LookTarget,
+  alignment: LookAlignment,
+  eye = 1.72,
+): Record<string, Pick<Pose, "body" | "head" | "pitch">> {
+  const chosen = new Set(ids),
+    ball = ballPosition(frame),
+    patches: Record<string, Pick<Pose, "body" | "head" | "pitch">> = {};
+  for (const player of project.roster) {
+    if (!chosen.has(player.id)) continue;
+    const point =
+      target === "ball" ? ball : { x: player.team === "home" ? 52.5 : -52.5, z: 0, y: 1.22 };
+    const p =
+      alignment === "body"
+        ? faceBall(frame.players[player.id], point, eye)
+        : gazeAtBall(frame.players[player.id], point, eye);
+    patches[player.id] = { body: p.body, head: p.head, pitch: p.pitch };
+  }
+  return patches;
+}
 export function withBallGaze(frame: Frame, eye: number): Frame {
   const ball = ballPosition(frame),
     players = { ...frame.players };

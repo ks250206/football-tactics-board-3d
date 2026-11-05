@@ -79,14 +79,14 @@ export class TacticsEngine {
     for(const player of project.roster){const athlete=createAthlete(player);this.athletes.set(player.id,athlete);this.scene.add(athlete.root);}
     this.scene.add(this.ball);
     for(const zone of LANE_ZONES){
-      const mesh=new T.Mesh(new T.PlaneGeometry(zone.length,zone.width),new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.55,depthWrite:false,side:T.DoubleSide}));
+      const mesh=new T.Mesh(new T.PlaneGeometry(zone.length,zone.width),new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.55,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}));
       mesh.rotation.x=-Math.PI/2;mesh.position.set(zone.x+zone.length/2,.012,zone.z+zone.width/2);mesh.renderOrder=-30;this.lanes.add(mesh);
     }
     for(const zone of BIELSA_ZONES){
       const geometry=new T.BufferGeometry(),vertices:number[]=[];
       for(const i of [1,2])for(const index of [0,i,i+1]){const [x,z]=zone.points[index];vertices.push(x,.016,z);}
       geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
-      const fill=new T.Mesh(geometry,new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.5,depthWrite:false,side:T.DoubleSide}));fill.renderOrder=-20;this.bielsa.add(fill);
+      const fill=new T.Mesh(geometry,new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.5,depthWrite:false,side:T.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-6}));fill.renderOrder=-20;this.bielsa.add(fill);
       const border=new T.BufferGeometry().setFromPoints([...zone.points,zone.points[0]].map(([x,z])=>new T.Vector3(x,.018,z)));
       const outline=new T.Line(border,new T.LineBasicMaterial({color:zone.color,transparent:true,opacity:1,depthWrite:false}));outline.renderOrder=-10;this.bielsa.add(outline);
     }
@@ -138,6 +138,8 @@ export class TacticsEngine {
       this.world.setLighting(settings.lighting);(this.scene.fog as T.FogExp2).color.set(settings.lighting==='night'?'#182834':settings.lighting==='day'?'#c4d5da':'#d9d2b9');
       this.scene.environmentIntensity=settings.lighting==='night'?.2:.28;this.lastLighting=settings.lighting;
     }
+    // Orbit views do not need a 6 cm near plane; avoid wasting depth precision.
+    this.camera.near=settings.camera==='orbit'?.5:settings.camera==='follow'?.2:.06;
     this.camera.fov=verticalFov(settings.fov,this.width/this.height);this.camera.updateProjectionMatrix();
     this.controls.enabled=settings.camera==='orbit';
     const yaw=(p.body+p.head)*RAD,pitch=p.pitch*RAD;

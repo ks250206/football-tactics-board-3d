@@ -14,6 +14,7 @@ import {
   fpsPose,
   gazeAtBall,
   illustrativeXg,
+  orientPlayers,
   PHASES,
   phaseProject,
   resolveDefence,
@@ -260,6 +261,37 @@ describe("phases and viewing", () => {
     expect(faced.z).toBe(0);
     expect(pose.head).toBe(70);
     expect(faceBall(pose, { x: 0, z: 0, y: 0.11 })).toEqual({ ...pose, head: 0 });
+  });
+  it("orients a selected subset without changing positions or the source frame", () => {
+    const project = createDemo(),
+      frame = sample(project, 0),
+      before = clone(frame);
+    const patches = orientPlayers(project, frame, ["away-2"], "goal", "body");
+    expect(Object.keys(patches)).toEqual(["away-2"]);
+    expect(Object.keys(patches["away-2"]).sort()).toEqual(["body", "head", "pitch"]);
+    const p = frame.players["away-2"];
+    expect(patches["away-2"].body).toBeCloseTo(Math.atan2(-p.z, -52.5 - p.x) / RAD);
+    expect(patches["away-2"].head).toBe(0);
+    expect(frame).toEqual(before);
+  });
+  it("directs all 22 players to the shared ball or their own opposing goal", () => {
+    const project = createDemo(),
+      frame = sample(project, 0),
+      ids = project.roster.map((p) => p.id),
+      ball = ballPosition(frame);
+    for (const target of ["ball", "goal"] as const)
+      for (const alignment of ["gaze", "body"] as const) {
+        const patches = orientPlayers(project, frame, ids, target, alignment);
+        expect(Object.keys(patches)).toHaveLength(22);
+        for (const player of project.roster) {
+          const p = frame.players[player.id],
+            q = target === "ball" ? ball : { x: player.team === "home" ? 52.5 : -52.5, z: 0 };
+          const yaw = Math.atan2(q.z - p.z, q.x - p.x) / RAD;
+          expect(wrap(patches[player.id].body + patches[player.id].head - yaw)).toBeCloseTo(0);
+          expect(Math.abs(patches[player.id].head)).toBeLessThanOrEqual(110);
+          if (alignment === "body") expect(patches[player.id].head).toBe(0);
+        }
+      }
   });
   it("normalises diagonal FPS speed, respects yaw, sensitivity and pitch limits", () => {
     const p = { x: 0, z: 0, body: 90, head: 0, pitch: 0 };

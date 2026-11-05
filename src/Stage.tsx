@@ -176,7 +176,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
   }, [props.project, props.frame, props.selected, props.settings]);
   const player = props.project.roster.find((p) => p.id === props.selected)!;
   return (
-    <div className="stage-shell" data-testid="stage">
+    <div className="stage-shell" data-testid="stage" data-camera-player={props.selected}>
       <div
         ref={host}
         className="stage-canvas"

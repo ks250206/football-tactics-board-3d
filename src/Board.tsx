@@ -1,11 +1,11 @@
 import { useMemo, useRef } from 'react';
 import { BIELSA_ZONES, LANE_ZONES, resolveDefence } from './tactics';
 import { clamp, RAD, type Frame, type Project, type Sight, type ViewSettings } from './core';
-interface Props { project:Project;frame:Frame;selected:string;ballActive:boolean;settings:ViewSettings;sights:Sight[];passMode:boolean;onPick:(id:string)=>void;onMove:(id:string,x:number,z:number)=>void;onPause:()=>void }
-export function Board({project,frame,selected,ballActive,settings,sights,passMode,onPick,onMove,onPause}:Props){
+interface Props { project:Project;frame:Frame;selected:string;focused:string;ballActive:boolean;settings:ViewSettings;sights:Sight[];passMode:boolean;onPick:(id:string)=>void;onMove:(id:string,x:number,z:number)=>void;onPause:()=>void }
+export function Board({project,frame,selected,focused,ballActive,settings,sights,passMode,onPick,onMove,onPause}:Props){
   const svg=useRef<SVGSVGElement>(null),drag=useRef<{id:string;dx:number;dz:number}|null>(null);
   const traces=useMemo(()=>project.frames.map(f=>resolveDefence(project,f)),[project]);
-  const p=frame.players[selected],yaw=(p.body+p.head)*RAD;
+  const p=frame.players[focused],yaw=(p.body+p.head)*RAD;
   const coords=(x:number,y:number)=>{const point=svg.current!.createSVGPoint();point.x=x;point.y=y;return point.matrixTransform(svg.current!.getScreenCTM()!.inverse());};
   const start=(event:React.PointerEvent<SVGGElement>,id:string,x:number,z:number)=>{
     if(event.button!==0)return;event.stopPropagation();onPause();onPick(id);if(passMode)return;
@@ -28,12 +28,13 @@ export function Board({project,frame,selected,ballActive,settings,sights,passMod
         {sights.filter(s=>s.inView&&!s.occluded).map(s=>{const q=frame.players[s.id];return <path key={s.id} d={`M${p.x},${p.z}L${q.x},${q.z}`} stroke={s.clearPass?'#b2d2fb':'#ee9374'} strokeWidth=".28" strokeDasharray={s.clearPass?'1 1':'0.5 1'} opacity=".5" markerEnd={s.clearPass?'url(#lane-arrow)':undefined}/>;})}</>}
       {settings.paths&&<><polyline points={traces.map(f=>`${f.players[selected].x},${f.players[selected].z}`).join(' ')} fill="none" stroke="#c7d7f0" strokeWidth=".4" strokeDasharray="1 1" opacity=".65"/>{traces.map(f=><circle key={f.t} cx={f.players[selected].x} cy={f.players[selected].z} r=".5" fill="#c7d7f0" opacity=".65"/>)}</>}
     </g>
-    {project.roster.map(player=>{const pose=frame.players[player.id],active=player.id===selected&&!ballActive,home=player.team==='home';return <g key={player.id} transform={`translate(${pose.x} ${pose.z})`} className="player-token" data-testid={`player-${player.id}`} role="button" tabIndex={0} aria-label={`${home?'HOME':'AWAY'} ${player.number} ${player.role}`} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPick(player.id);}}} onPointerDown={e=>start(e,player.id,pose.x,pose.z)}>
+    {project.roster.map(player=>{const pose=frame.players[player.id],tokenYaw=(pose.body+pose.head)*RAD,active=player.id===selected&&!ballActive,home=player.team==='home';return <g key={player.id} transform={`translate(${pose.x} ${pose.z})`} className="player-token" data-testid={`player-${player.id}`} role="button" tabIndex={0} aria-label={`${home?'HOME':'AWAY'} ${player.number} ${player.role}`} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPick(player.id);}}} onPointerDown={e=>start(e,player.id,pose.x,pose.z)}>
+      {player.id===focused&&focused!==selected&&<circle r="2.85" fill="none" stroke="#7bb7ff" strokeWidth=".28" strokeDasharray=".6 .35" data-testid="camera-focus-ring"/>}
       <circle className="token-hit" r="2.5" fill="transparent"/><circle className="token-focus" r="2.65" fill="none" stroke="#99caff" strokeWidth=".25"/>{active&&<circle data-testid="selection-ring" r="2.5" fill="none" stroke="#edf4ff" strokeWidth=".35"/>}
       <g transform={`rotate(${pose.body})`}><path d="m1.1-1.4 2.5 1.4-2.5 1.4" fill={home?'#e5eaf0':'#f4a48b'} opacity=".8"/></g>
       <circle r="1.95" fill={home?'#f5f6f7':'#db7056'} stroke={active?'#ffffff':home?'#152b20':'#421e16'} strokeWidth=".38"/>
       <text textAnchor="middle" dominantBaseline="central" fontFamily="system-ui" fontSize="1.9" fontWeight="700" fill={home?'#26313f':'#ffffff'} style={{pointerEvents:'none'}}>{player.number}</text>
-      {active&&<path d={`M${Math.cos(yaw)*2.2},${Math.sin(yaw)*2.2}L${Math.cos(yaw)*5.8},${Math.sin(yaw)*5.8}`} stroke="#cbe0ff" strokeWidth=".5" strokeLinecap="round"/>}
+      {active&&<path d={`M${Math.cos(tokenYaw)*2.2},${Math.sin(tokenYaw)*2.2}L${Math.cos(tokenYaw)*5.8},${Math.sin(tokenYaw)*5.8}`} stroke="#cbe0ff" strokeWidth=".5" strokeLinecap="round"/>}
     </g>;})}
     <g transform={`translate(${frame.ball.x} ${frame.ball.z})`} className="ball-token" data-testid="ball-token" role="button" tabIndex={0} aria-label="ボール" onKeyDown={e=>{if(e.key==='Enter'){onPick('ball');}}} onPointerDown={e=>start(e,'ball',frame.ball.x,frame.ball.z)}><circle className="token-hit" r="1.7" fill="transparent"/><circle className="token-focus" r="1.8" fill="none" stroke="#99caff" strokeWidth=".25"/>{ballActive&&<circle r="2.4" fill="none" stroke="#8fc9ff" strokeWidth=".35"/>}<circle r="1.1" fill="#ffffff" stroke="#1b2b23" strokeWidth=".32"/><path d="m0-.55.53.38-.2.61h-.66l-.2-.61Z" fill="#26313f"/></g>
     <text x="-52" y="38" fill="#4d5966" fontSize="1.7" letterSpacing=".3">HOME →</text><text x="52" y="38" textAnchor="end" fill="#4d5966" fontSize="1.7" letterSpacing=".2">105 × 68 m</text>
