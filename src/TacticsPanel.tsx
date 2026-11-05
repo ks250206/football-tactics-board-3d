@@ -21,12 +21,19 @@ const thirds: [Third, string][] = [
   ["attacking", "アタッキング"],
 ];
 export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }: Props) {
-  const [shape, setShape] = useState<ShapeSettings>(DEFAULT_SHAPE),
-    [custom, setCustom] = useState(""),
-    [phase, setPhase] = useState(PHASES[0].id);
+  const [team, setTeam] = useState<Team>("home");
+  const [shapes, setShapes] = useState<Record<Team, ShapeSettings>>(() => ({
+    home: { ...DEFAULT_SHAPE, team: "home" },
+    away: { ...DEFAULT_SHAPE, team: "away" },
+  }));
+  const [customs, setCustoms] = useState<Record<Team, string>>({ home: "", away: "" });
+  const [phase, setPhase] = useState(PHASES[0].id);
+  const shape = shapes[team],
+    custom = customs[team];
+  const orderedThirds = team === "away" ? [...thirds].reverse() : thirds;
   const change = (patch: Partial<ShapeSettings>) => {
     const next = { ...shape, ...patch };
-    setShape(next);
+    setShapes((s) => ({ ...s, [team]: next }));
     onShape(next, "tilt" in patch ? "outfield" : "team");
   };
   return (
@@ -45,7 +52,7 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                   <select
                     aria-label="配置の対象チーム"
                     value={shape.team}
-                    onChange={(e) => setShape((s) => ({ ...s, team: e.target.value as Team }))}
+                    onChange={(e) => setTeam(e.target.value as Team)}
                   >
                     <option value="home">HOME →</option>
                     <option value="away">AWAY ←</option>
@@ -75,7 +82,7 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                 </button>
               </div>
               <div className="segmented thirds" aria-label="配置するサード">
-                {thirds.map(([value, label]) => (
+                {orderedThirds.map(([value, label]) => (
                   <button
                     key={value}
                     aria-pressed={shape.third === value}
@@ -109,6 +116,7 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                       min={min}
                       max={max}
                       value={shape[key]}
+                      dir={key === "tilt" && team === "away" ? "rtl" : "ltr"}
                       onChange={(e) => change({ [key]: Number(e.target.value) })}
                     />
                   </label>
@@ -120,14 +128,14 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                   placeholder="その他の配置 例: 3-3-1-3"
                   value={custom}
                   maxLength={20}
-                  onChange={(e) => setCustom(e.target.value)}
+                  onChange={(e) => setCustoms((s) => ({ ...s, [team]: e.target.value }))}
                 />
                 <button
                   className="button subtle small"
                   onClick={() => {
                     try {
                       formationLines(custom);
-                      setShape((s) => ({ ...s, formation: custom }));
+                      setShapes((s) => ({ ...s, [team]: { ...shape, formation: custom } }));
                     } catch {}
                     onShape({ ...shape, formation: custom });
                   }}

@@ -24,7 +24,26 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
   const before = await saved(page);
   expect(before.frames[0].players["home-2"].x).toBeGreaterThan(0);
   expect(before.frames[0].players["home-2"].z).toBeCloseTo(-28);
+  await page.getByLabel("カスタム配置", { exact: true }).fill("3-3-1-3");
   await page.getByLabel("配置の対象チーム", { exact: true }).selectOption("away");
+  await expect(page.getByLabel("フォーメーション", { exact: true })).toHaveValue("4-3-3");
+  await expect(page.getByLabel("横の広さ", { exact: true })).toHaveValue("52");
+  await expect(page.getByLabel("左右の偏り", { exact: true })).toHaveValue("0");
+  await expect(page.getByLabel("カスタム配置", { exact: true })).toHaveValue("");
+  expect(await page.locator('[aria-label="配置するサード"] button').allTextContents()).toEqual([
+    "アタッキング",
+    "ミドル",
+    "ディフェンシブ",
+  ]);
+  await expect(page.getByLabel("フィールドチルト（陣地の高さ）", { exact: true })).toHaveAttribute(
+    "dir",
+    "rtl",
+  );
+  expect(await saved(page)).toEqual(before);
+  await page.getByLabel("フォーメーション", { exact: true }).selectOption("3-2-5");
+  await page.getByRole("button", { name: "アタッキング", exact: true }).click();
+  await page.getByLabel("横の広さ", { exact: true }).fill("60");
+  await page.getByLabel("左右の偏り", { exact: true }).fill("100");
   await page.getByRole("button", { name: "配置を適用", exact: true }).click();
   const away = await saved(page);
   expect(away.frames[0].players["away-2"].x).toBeCloseTo(-before.frames[0].players["home-2"].x);
@@ -36,6 +55,30 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
   const shifted = await saved(page);
   expect(shifted.frames[0].players["away-1"]).toEqual(away.frames[0].players["away-1"]);
   expect(shifted.frames[0].players["away-2"].x).not.toBe(away.frames[0].players["away-2"].x);
+  expect(shifted.frames[0].players["away-2"].x).toBeGreaterThan(away.frames[0].players["away-2"].x);
+  await page.getByLabel("配置の対象チーム").selectOption("home");
+  await expect(page.getByLabel("フォーメーション", { exact: true })).toHaveValue("3-2-5");
+  await expect(page.getByLabel("横の広さ", { exact: true })).toHaveValue("60");
+  await expect(page.getByLabel("左右の偏り", { exact: true })).toHaveValue("100");
+  await expect(page.getByLabel("カスタム配置", { exact: true })).toHaveValue("3-3-1-3");
+  await expect(page.getByLabel("フィールドチルト（陣地の高さ）", { exact: true })).toHaveValue("0");
+  await expect(page.getByLabel("フィールドチルト（陣地の高さ）", { exact: true })).toHaveAttribute(
+    "dir",
+    "ltr",
+  );
+  await expect(page.getByRole("button", { name: "アタッキング", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByLabel("配置の対象チーム").selectOption("away");
+  await expect(page.getByLabel("フィールドチルト（陣地の高さ）", { exact: true })).toHaveValue(
+    "-15",
+  );
+  await expect(page.getByLabel("フォーメーション", { exact: true })).toHaveValue("3-2-5");
+  await expect(page.getByLabel("横の広さ", { exact: true })).toHaveValue("60");
+  await expect(page.getByLabel("左右の偏り", { exact: true })).toHaveValue("100");
+  await expect(page.getByLabel("カスタム配置", { exact: true })).toHaveValue("");
+  expect(await saved(page)).toEqual(shifted);
   await page.getByLabel("守備プリセット", { exact: true }).selectOption("man");
   const plan = await saved(page);
   expect(new Set(Object.values(plan.defence.marks)).size).toBe(10);

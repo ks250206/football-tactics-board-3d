@@ -68,6 +68,17 @@ describe("formations", () => {
       for (const key of ["x", "z", "y", "arc"] as const)
         expect(sample(next, t).ball[key]).toBeCloseTo(sample(base, t).ball[key], 10);
   });
+  it("reverses attacking/defensive thirds and positive field-height movement for away", () => {
+    const project = createDemo();
+    for (const team of ["home", "away"] as const) {
+      const x = (third: "defensive" | "middle" | "attacking", tilt = 0) =>
+        shapePoses(project, { ...DEFAULT_SHAPE, team, third, tilt })[`${team}-2`].x;
+      const sign = team === "home" ? 1 : -1;
+      expect((x("attacking") - x("middle")) * sign).toBeGreaterThan(0);
+      expect((x("defensive") - x("middle")) * sign).toBeLessThan(0);
+      expect((x("middle", 20) - x("middle", -20)) * sign).toBeCloseTo(40);
+    }
+  });
   it("retains a manually positioned keeper when changing field height at an intermediate key", () => {
     for (const team of ["home", "away"] as const) {
       const project = createDemo(),
