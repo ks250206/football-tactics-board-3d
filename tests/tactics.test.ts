@@ -68,6 +68,20 @@ describe("formations", () => {
       for (const key of ["x", "z", "y", "arc"] as const)
         expect(sample(next, t).ball[key]).toBeCloseTo(sample(base, t).ball[key], 10);
   });
+  it("retains a manually positioned keeper when changing field height at an intermediate key", () => {
+    for (const team of ["home", "away"] as const) {
+      const project = createDemo(),
+        id = `${team}-1`;
+      for (const frame of project.frames)
+        frame.players[id] = { x: team === "home" ? -45 : 45, z: 4, body: 30, head: -20, pitch: 5 };
+      const before = sample(project, 2),
+        next = applyShape(project, 2, { ...DEFAULT_SHAPE, team, tilt: 20 }, "outfield");
+      expect(sample(next, 2).players[id]).toEqual(before.players[id]);
+      expect(sample(next, 2).players[`${team}-2`].x).not.toBe(before.players[`${team}-2`].x);
+      expect(next.frames[0]).toEqual(project.frames[0]);
+      expect(next.frames.at(-1)).toEqual(project.frames.at(-1));
+    }
+  });
   it("shifts left and right in attack-relative coordinates without changing the shape width", () => {
     const project = createDemo();
     for (const team of ["home", "away"] as const)

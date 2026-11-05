@@ -11,7 +11,7 @@ import {
 interface Props {
   project: Project;
   disabled: boolean;
-  onShape: (shape: ShapeSettings) => void;
+  onShape: (shape: ShapeSettings, scope?: "team" | "outfield") => void;
   onDefence: (team: Team, mode: "zone" | "man" | "off") => void;
   onPhase: (id: string, team: Team) => void;
 }
@@ -27,7 +27,7 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
   const change = (patch: Partial<ShapeSettings>) => {
     const next = { ...shape, ...patch };
     setShape(next);
-    onShape(next);
+    onShape(next, "tilt" in patch ? "outfield" : "team");
   };
   return (
     <section className="tactics-panel panel" aria-label="配置と局面のプリセット">

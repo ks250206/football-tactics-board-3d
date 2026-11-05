@@ -121,8 +121,15 @@ export function shapePoses(project: Project, options: ShapeSettings): Record<str
   });
   return poses;
 }
-export function applyShape(project: Project, time: number, options: ShapeSettings): Project {
+export function applyShape(
+  project: Project,
+  time: number,
+  options: ShapeSettings,
+  scope: "team" | "outfield" = "team",
+): Project {
   const poses = shapePoses(project, options);
+  // Keep the sampled keeper pose (including manual edits) when adjusting field height.
+  if (scope === "outfield") delete poses[squad(project.roster, options.team).keeper.id];
   const next = upsert(project, time, (f) => Object.assign(f.players, poses));
   if (next.defence?.team === options.team) delete next.defence;
   return next;

@@ -115,7 +115,7 @@ export default function App(){
     }catch(e){stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;setToast(e instanceof Error?e.message:'録画を開始できませんでした。');}
   };
   const lookAtBall=()=>editPose(gazeAtBall(pose,frame.ball,settings.eye),'ball-look');
-  const shape=(options:ShapeSettings)=>{try{setPlaying(false);commit(applyShape(projectRef.current.defence?.team===options.team?bakeDefence(projectRef.current):projectRef.current,timeRef.current,options),`shape-${options.team}`);}catch(e){setToast(e instanceof Error?e.message:'配置を適用できませんでした。');}};
+  const shape=(options:ShapeSettings,scope:'team'|'outfield'='team')=>{try{setPlaying(false);commit(applyShape(projectRef.current.defence?.team===options.team?bakeDefence(projectRef.current):projectRef.current,timeRef.current,options,scope),`shape-${options.team}`);}catch(e){setToast(e instanceof Error?e.message:'配置を適用できませんでした。');}};
   const setDefence=(team:'home'|'away',mode:'zone'|'man'|'off')=>{setPlaying(false);const base=bakeDefence(projectRef.current);commit(mode==='off'?base:{...base,defence:defencePlan(base,frame,team,mode)});};
   const loadPhase=(id:string,team:'home'|'away')=>{const phase=PHASES.find(p=>p.id===id);if(!phase)return;setPlaying(false);setPassMode(false);commit(phaseProject(projectRef.current,phase,team));seek(0);setToast('局面の12秒シーケンスを読み込みました。再生して確認できます。');};
   const xgTeam=frame.ball.owner?project.roster.find(p=>p.id===frame.ball.owner)!.team:player.team;

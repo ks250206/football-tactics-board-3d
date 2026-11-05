@@ -29,6 +29,13 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
   const away = await saved(page);
   expect(away.frames[0].players["away-2"].x).toBeCloseTo(-before.frames[0].players["home-2"].x);
   expect(away.frames[0].players["away-2"].z).toBeCloseTo(-before.frames[0].players["home-2"].z);
+  const keeper = page.getByTestId("player-away-1"),
+    keeperPosition = await keeper.getAttribute("transform");
+  await page.getByLabel("フィールドチルト（陣地の高さ）", { exact: true }).fill("-15");
+  await expect(keeper).toHaveAttribute("transform", keeperPosition!);
+  const shifted = await saved(page);
+  expect(shifted.frames[0].players["away-1"]).toEqual(away.frames[0].players["away-1"]);
+  expect(shifted.frames[0].players["away-2"].x).not.toBe(away.frames[0].players["away-2"].x);
   await page.getByLabel("守備プリセット", { exact: true }).selectOption("man");
   const plan = await saved(page);
   expect(new Set(Object.values(plan.defence.marks)).size).toBe(10);
