@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { ballPosition, clone, createDemo, parseProject, RAD, sample, wrap } from "../src/core";
 import {
+  applyFpsInput,
   applyShape,
   BIELSA_ZONES,
   DEFAULT_SHAPE,
@@ -8,6 +9,7 @@ import {
   formationLines,
   FORMATIONS,
   fpsLook,
+  fpsStep,
   fpsPose,
   gazeAtBall,
   illustrativeXg,
@@ -65,6 +67,24 @@ describe("formations", () => {
     for (const t of [1.3, 1.9, 2, 2.1, 2.3])
       for (const key of ["x", "z", "y", "arc"] as const)
         expect(sample(next, t).ball[key]).toBeCloseTo(sample(base, t).ball[key], 10);
+  });
+  it("shifts left and right in attack-relative coordinates without changing the shape width", () => {
+    const project = createDemo();
+    for (const team of ["home", "away"] as const)
+      for (const formation of FORMATIONS)
+        for (const width of [20, 62]) {
+          const middle = shapePoses(project, { ...DEFAULT_SHAPE, team, formation, width });
+          for (const bias of [-100, 100]) {
+            const shifted = shapePoses(project, { ...DEFAULT_SHAPE, team, formation, width, bias });
+            const dz = shifted[`${team}-2`].z - middle[`${team}-2`].z;
+            expect(Math.sign(dz)).toBe(Math.sign(bias) * (team === "home" ? 1 : -1));
+            for (let n = 2; n <= 11; n++) {
+              const id = `${team}-${n}`;
+              expect(shifted[id].z - middle[id].z).toBeCloseTo(dz);
+              expect(Math.abs(shifted[id].z)).toBeLessThanOrEqual(32);
+            }
+          }
+        }
   });
   it("supports custom 11-a-side shapes and rejects incomplete/invalid configurations", () => {
     expect(formationLines("3-3-1-3")).toEqual([3, 3, 1, 3]);
@@ -196,14 +216,34 @@ describe("phases and viewing", () => {
     expect(fpsLook(p, 100, 1000, 0.2)).toMatchObject({ body: 110, head: 0, pitch: -45 });
     expect(fpsPose({ ...p, z: 34 }, 1, 0, 0.05).z).toBe(34);
   });
-  it("connects the goal posts to the front goal-area corners on both ends", () => {
+  it("combines movement and look, retaining both across commits before another render", () => {
+    const start = { x: 0, z: 0, body: 0, head: 0, pitch: 0 };
+    const input = { forward: 1, right: 0, seconds: 0.05, dx: 100, dy: 25, sensitivity: 0.2 };
+    const step = fpsStep(start, input);
+    expect(step.body).toBeCloseTo(20);
+    expect(step.pitch).toBeCloseTo(-5);
+    expect(step.x).toBeCloseTo(0.25 * Math.cos(20 * RAD));
+    expect(step.z).toBeCloseTo(0.25 * Math.sin(20 * RAD));
+    const project = createDemo();
+    project.frames[0].players["home-6"] = start;
+    const turned = applyFpsInput(project, 0, "home-6", input);
+    const moved = applyFpsInput(turned, 0, "home-6", { ...input, dx: 0, dy: 0 });
+    expect(moved.frames[0].players["home-6"]).toMatchObject({ body: 20, pitch: -5, head: 0 });
+    expect(moved.frames[0].players["home-6"].x).toBeCloseTo(step.x * 2);
+    expect(moved.frames[0].players["home-6"].z).toBeCloseTo(step.z * 2);
+    expect(project.frames[0].players["home-6"]).toEqual(start);
+  });
+  it("extends the goal-post diagonals to the penalty-area corners on both ends", () => {
     expect(BIELSA_ZONES[1].points).toEqual([
-      [47, -9.16],
+      [36, -20.16],
       [52.5, -3.66],
       [52.5, 3.66],
-      [47, 9.16],
+      [36, 20.16],
     ]);
     expect(BIELSA_ZONES[0].points).toEqual(BIELSA_ZONES[1].points.map(([x, z]) => [-x, z]));
+    const [corner, post] = BIELSA_ZONES[1].points;
+    const atGoalArea = (47 - corner[0]) / (post[0] - corner[0]);
+    expect(corner[1] + (post[1] - corner[1]) * atGoalArea).toBeCloseTo(-9.16);
   });
   it("shows only a distance/angle illustration for eligible ground shots and mirrors teams", () => {
     const near = illustrativeXg({ x: 41, z: 0, y: 0.11 }, "home"),

@@ -20,12 +20,15 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
   await page.getByLabel("フォーメーション", { exact: true }).selectOption("3-2-5");
   await page.getByRole("button", { name: "アタッキング", exact: true }).click();
   await page.getByLabel("横の広さ", { exact: true }).fill("60");
+  await page.getByLabel("左右の偏り", { exact: true }).fill("100");
   const before = await saved(page);
   expect(before.frames[0].players["home-2"].x).toBeGreaterThan(0);
+  expect(before.frames[0].players["home-2"].z).toBeCloseTo(-28);
   await page.getByLabel("配置の対象チーム", { exact: true }).selectOption("away");
   await page.getByRole("button", { name: "配置を適用", exact: true }).click();
   const away = await saved(page);
   expect(away.frames[0].players["away-2"].x).toBeCloseTo(-before.frames[0].players["home-2"].x);
+  expect(away.frames[0].players["away-2"].z).toBeCloseTo(-before.frames[0].players["home-2"].z);
   await page.getByLabel("守備プリセット", { exact: true }).selectOption("man");
   const plan = await saved(page);
   expect(new Set(Object.values(plan.defence.marks)).size).toBe(10);
@@ -91,7 +94,7 @@ test("renders compact keyboard focus, five lanes, Bielsa trapezoids and optional
   await expect(page.getByTestId("xg-readout")).toContainText("未学習・未校正");
   await expect(page.getByTestId("bielsa-zone").nth(1)).toHaveAttribute(
     "points",
-    "47,-9.16 52.5,-3.66 52.5,3.66 47,9.16",
+    "36,-20.16 52.5,-3.66 52.5,3.66 36,20.16",
   );
   await page.getByRole("button", { name: "自由", exact: true }).click();
   await mkdir("artifacts", { recursive: true });
@@ -103,7 +106,7 @@ test("renders compact keyboard focus, five lanes, Bielsa trapezoids and optional
   await page.screenshot({ path: "artifacts/tactical-overlays-mobile.png", fullPage: true });
   expect(errors).toEqual([]);
 });
-test("controls the player with WASD, mouse sensitivity and Escape (native lock or drag fallback)", async ({
+test("controls the player with simultaneous WASD and free mouse look, sensitivity and Escape (native lock or bounded fallback)", async ({
   page,
 }) => {
   await page.goto("/");
@@ -119,23 +122,26 @@ test("controls the player with WASD, mouse sensitivity and Escape (native lock o
         (await page
           .locator(".look-hint")
           .innerText()
-          .then((t) => t.includes("ドラッグで旋回"))),
+          .then((t) => t.includes("画面内"))),
     )
     .toBe(true);
   const selected = page.getByTestId("player-home-6"),
     start = await selected.getAttribute("transform");
   await page.keyboard.down("w");
   await expect(selected).not.toHaveAttribute("transform", start!);
+  const headingBefore = await page.getByTestId("body-slider").inputValue();
+  const pitchBefore = await page.getByLabel("視線の上下", { exact: true }).inputValue();
+  const box = await page.getByTestId("scene-canvas").boundingBox();
+  if (!box) throw new Error("Missing canvas");
+  // Move the mouse without a button while W remains held, including the non-locking fallback.
+  await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 20, { steps: 4 });
+  await expect(page.getByTestId("body-slider")).not.toHaveValue(headingBefore);
+  await expect(page.getByLabel("視線の上下", { exact: true })).not.toHaveValue(pitchBefore);
+  const turned = await page.getByTestId("body-slider").inputValue(),
+    positionAfterTurn = await selected.getAttribute("transform");
+  await expect(selected).not.toHaveAttribute("transform", positionAfterTurn!);
+  await expect(page.getByTestId("body-slider")).toHaveValue(turned);
   await page.keyboard.up("w");
-  if (await page.evaluate(() => !!document.pointerLockElement)) await page.mouse.move(70, 40);
-  else {
-    const box = await page.getByTestId("scene-canvas").boundingBox();
-    if (!box) throw new Error("Missing canvas");
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 20, { steps: 3 });
-    await page.mouse.up();
-  }
   await page.keyboard.press("Escape");
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false);
   await expect(page.getByLabel("3D操作画面", { exact: true })).toHaveAttribute(

@@ -1,8 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import type { Frame, Pose, Project, ViewSettings } from "./core";
+import type { Frame, Project, ViewSettings } from "./core";
 import { clamp } from "./core";
 import { TacticsEngine } from "./engine";
-import { fpsLook, fpsPose } from "./tactics";
+import type { FpsInput } from "./tactics";
 
 export interface StageHandle {
   capture: () => string | undefined;
@@ -17,7 +17,7 @@ interface Props {
   onLook: (head: number, pitch: number) => void;
   onPause: () => void;
   onAspect: (aspect: number) => void;
-  onControl: (pose: Pose) => void;
+  onControl: (input: FpsInput) => void;
 }
 export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
   const host = useRef<HTMLDivElement>(null),
@@ -31,7 +31,8 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
     [inputError, setInputError] = useState(""),
     [inputActive, setInputActive] = useState(false);
   const activeInput = useRef(false),
-    fpsDrag = useRef<{ x: number; y: number } | null>(null);
+    fpsDrag = useRef<{ x: number; y: number } | null>(null),
+    pendingLook = useRef({ dx: 0, dy: 0 });
   useEffect(() => {
     const element = host.current;
     if (!element) return;
@@ -40,6 +41,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
       last = 0;
     const release = () => {
       keys.clear();
+      pendingLook.current = { dx: 0, dy: 0 };
       last = 0;
       activeInput.current = false;
       fpsDrag.current = null;
@@ -72,18 +74,20 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
       const p = current.current;
       if (document.pointerLockElement !== element || !p.settings.fps || p.settings.camera !== "eye")
         return;
-      p.onControl(
-        fpsLook(p.frame.players[p.selected], e.movementX, e.movementY, p.settings.sensitivity),
-      );
+      pendingLook.current.dx += e.movementX;
+      pendingLook.current.dy += e.movementY;
     };
     const tick = (now: number) => {
       const p = current.current;
       const dt = last ? (now - last) / 1000 : 0;
       last = now;
-      if (focused() && p.settings.fps && p.settings.camera === "eye" && keys.size) {
+      if (focused() && p.settings.fps && p.settings.camera === "eye") {
         const forward = Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
           right = Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
-        if (forward || right) p.onControl(fpsPose(p.frame.players[p.selected], forward, right, dt));
+        const { dx, dy } = pendingLook.current;
+        pendingLook.current = { dx: 0, dy: 0 };
+        if (forward || right || dx || dy)
+          p.onControl({ forward, right, dx, dy, seconds: dt, sensitivity: p.settings.sensitivity });
       }
       raf = requestAnimationFrame(tick);
     };
@@ -105,6 +109,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
       cancelAnimationFrame(raf);
       activeInput.current = false;
       fpsDrag.current = null;
+      pendingLook.current = { dx: 0, dy: 0 };
       if (document.pointerLockElement === element) document.exitPointerLock();
       document.removeEventListener("pointerlockchange", lock);
       document.removeEventListener("keydown", keydown);
@@ -120,6 +125,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
     setInputActive(false);
     setInputError("");
     fpsDrag.current = null;
+    pendingLook.current = { dx: 0, dy: 0 };
     host.current?.blur();
     if (document.pointerLockElement === host.current) document.exitPointerLock();
   }, [props.settings.fps, props.settings.camera, props.selected]);
@@ -192,7 +198,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
             }
             const fallback = () => {
               if (activeInput.current)
-                setInputError("マウス固定を利用できません。WASD + ドラッグで旋回 · Esc 解除");
+                setInputError("マウス固定を利用できません。WASD + マウス（画面内）· Esc 解除");
             };
             try {
               if (typeof e.currentTarget.requestPointerLock !== "function") fallback();
@@ -209,15 +215,11 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
         onPointerMove={(e) => {
           if (props.settings.fps) {
             const start = fpsDrag.current;
-            if (activeInput.current && start && !document.pointerLockElement) {
-              props.onControl(
-                fpsLook(
-                  props.frame.players[props.selected],
-                  e.clientX - start.x,
-                  e.clientY - start.y,
-                  props.settings.sensitivity,
-                ),
-              );
+            if (activeInput.current && !document.pointerLockElement) {
+              if (start) {
+                pendingLook.current.dx += e.clientX - start.x;
+                pendingLook.current.dy += e.clientY - start.y;
+              }
               fpsDrag.current = { x: e.clientX, y: e.clientY };
             }
             return;
@@ -231,7 +233,10 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
         }}
         onPointerUp={() => {
           drag.current = null;
-          fpsDrag.current = null;
+          if (!props.settings.fps) fpsDrag.current = null;
+        }}
+        onPointerLeave={() => {
+          if (!document.pointerLockElement) fpsDrag.current = null;
         }}
         onPointerCancel={() => {
           drag.current = null;

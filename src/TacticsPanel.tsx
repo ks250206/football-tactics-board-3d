@@ -92,6 +92,7 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                     ["compactness", "コンパクトさ", 0, 100, "%"],
                     ["width", "横の広さ", 20, 62, "m"],
                     ["tilt", "フィールドチルト（陣地の高さ）", -20, 20, "m"],
+                    ["bias", "左右の偏り", -100, 100, "%"],
                   ] as const
                 ).map(([key, label, min, max, unit]) => (
                   <label key={key} className="slider-control">
@@ -134,7 +135,10 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                   カスタムを適用
                 </button>
               </div>
-              <p>各列の合計10人＋GK。配置とバーは現在時刻に適用。高さバーは陣地位置の調整です。</p>
+              <p>
+                各列の合計10人＋GK。配置とバーは現在時刻に適用。左右の偏りは攻撃方向基準で −
+                が左、＋ が右。横幅を保って寄せます。
+              </p>
             </div>
             <div className="tactics-group">
               <h3>守備と試合の局面</h3>

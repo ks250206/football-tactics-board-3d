@@ -61,6 +61,7 @@ export interface ShapeSettings {
   compactness: number;
   width: number;
   tilt: number;
+  bias: number;
 }
 export const DEFAULT_SHAPE: ShapeSettings = {
   formation: "4-3-3",
@@ -69,6 +70,7 @@ export const DEFAULT_SHAPE: ShapeSettings = {
   compactness: 50,
   width: 52,
   tilt: 0,
+  bias: 0,
 };
 export function formationLines(value: string): number[] {
   if (!/^([1-9]-){1,9}[1-9]$/.test(value))
@@ -89,10 +91,13 @@ export function shapePoses(project: Project, options: ShapeSettings): Record<str
     50 - length / 2,
   );
   const { keeper, outfield } = squad(project.roster, options.team);
+  const span = lines.some((n) => n >= 3) ? width : lines.some((n) => n === 2) ? width * 0.5 : 0;
+  // Translate as a block, retaining every line's width and a 2 m touchline margin.
+  const lateral = (clamp(options.bias, -100, 100) / 100) * (32 - span / 2);
   const poses: Record<string, Pose> = {
     [keeper.id]: {
       x: sign * clamp(center - 34, -49, -16) || 0,
-      z: 0,
+      z: sign * lateral * 0.25 || 0,
       body: sign === 1 ? 0 : 180,
       head: 0,
       pitch: 0,
@@ -107,7 +112,7 @@ export function shapePoses(project: Project, options: ShapeSettings): Record<str
       const span = count === 2 ? width * 0.5 : count === 1 ? 0 : width;
       poses[player.id] = {
         x: sign * (center - length / 2 + (line * length) / (lines.length - 1)) || 0,
-        z: sign * (count === 1 ? 0 : -span / 2 + (n * span) / (count - 1)) || 0,
+        z: sign * (lateral + (count === 1 ? 0 : -span / 2 + (n * span) / (count - 1))) || 0,
         body: sign === 1 ? 0 : 180,
         head: 0,
         pitch: 0,
@@ -419,6 +424,37 @@ export function phaseProject(base: Project, phase: Phase, team: Team): Project {
   return project;
 }
 
+export interface FpsInput {
+  forward: number;
+  right: number;
+  seconds: number;
+  dx: number;
+  dy: number;
+  sensitivity: number;
+}
+/** One atomic movement/look update, applied to the latest authored pose. */
+export function fpsStep(pose: Pose, input: FpsInput): Pose {
+  return fpsPose(
+    fpsLook(pose, input.dx, input.dy, input.sensitivity),
+    input.forward,
+    input.right,
+    input.seconds,
+  );
+}
+export function applyFpsInput(
+  project: Project,
+  time: number,
+  id: string,
+  input: FpsInput,
+): Project {
+  const team = project.roster.find((p) => p.id === id)?.team;
+  if (!team) return project;
+  const base = project.defence?.team === team ? bakeDefence(project) : project;
+  return upsert(base, time, (f) => {
+    f.players[id] = fpsStep(f.players[id], input);
+  });
+}
+
 export function fpsPose(pose: Pose, forward: number, right: number, seconds: number): Pose {
   const length = Math.hypot(forward, right) || 1,
     yaw = (pose.body + pose.head) * RAD,
@@ -469,14 +505,14 @@ export const LANE_ZONES: PitchZone[] = [-34, -20.16, -9.16, 9.16, 20.16].map((z,
   color: ["#72b9e8", "#e5b86f", "#b9d88b", "#e5b86f", "#72b9e8"][i],
   label: ["左ワイド", "左ハーフスペース", "中央", "右ハーフスペース", "右ワイド"][i],
 }));
-/** User-specified trapezoid: the two goal posts and the two front goal-area corners.
- * This occupies the goal-mouth side of the goal area. No scoring percentages. */
+/** Full trapezoid from the goal posts to the penalty-area front corners.
+ * The diagonals continue through the front goal-area corners. No scoring percentages. */
 export const BIELSA_ZONES = [-1, 1].map((sign) => ({
   points: [
-    [sign * 47, -9.16],
+    [sign * 36, -20.16],
     [sign * 52.5, -3.66],
     [sign * 52.5, 3.66],
-    [sign * 47, 9.16],
+    [sign * 36, 20.16],
   ],
   color: "#f2c35f",
 }));
