@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, stat } from 'node:fs/promises';
 
 test('renders WebGL, changes camera and produces studio screenshots',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
@@ -18,15 +18,20 @@ test('edits body and gaze independently, scrubs, auto-keys and undoes',async({pa
   const rail=await page.getByTestId('timeline-rail').boundingBox();if(!rail)throw new Error('Missing timeline');
   await page.mouse.click(rail.x+rail.width*.18,rail.y+6);
   const before=await page.getByTestId('head-slider').inputValue();
+  await page.getByTestId('scene-canvas').evaluate(el=>el.setAttribute('data-test-identity','same-renderer'));
   await page.getByTestId('body-slider').focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight');
   await expect(page.getByTestId('body-slider')).toHaveValue('-179');await expect(page.getByTestId('head-slider')).toHaveValue(before);
   await page.getByTestId('head-slider').focus();await page.keyboard.press('End');await expect(page.getByTestId('head-slider')).toHaveValue('110');
   await page.getByRole('button',{name:'元に戻す',exact:true}).click();await expect(page.getByTestId('head-slider')).toHaveValue(before);
-  await page.getByTestId('play-button').click();const t=await page.getByTestId('timecode').innerText();await page.waitForTimeout(700);expect(await page.getByTestId('timecode').innerText()).not.toEqual(t);await page.getByTestId('play-button').click();
+  await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-test-identity','same-renderer');
+  const t=await page.getByTestId('timecode').innerText();await page.getByTestId('play-button').click();
+  await expect(page.getByTestId('play-button')).toHaveAttribute('aria-label','一時停止');
+  await expect.poll(()=>page.getByTestId('timecode').innerText(),{timeout:10000}).not.toEqual(t);
+  await page.getByTestId('play-button').click();
   await page.waitForTimeout(600);const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('touchline.project.v1')!));expect(saved.frames.length).toBeGreaterThan(9);
 });
 
-test('drags a player and creates a pass; exports and validates JSON',async({page})=>{
+test('drags a player, authors a pass and exports JSON, PNG and video',async({page})=>{
   await page.goto('/');await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-ready','true');
   const player=page.getByTestId('player-home-6');const rect=await player.boundingBox();if(!rect)throw new Error('Missing player');
   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.down();await page.mouse.move(rect.x+rect.width/2+25,rect.y+rect.height/2+10,{steps:6});await page.mouse.up();
@@ -34,6 +39,11 @@ test('drags a player and creates a pass; exports and validates JSON',async({page
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'JSONを書き出す'}).click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('touchline-sequence.json');
   await page.getByTestId('import-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"version":9}')});await expect(page.getByRole('status')).toContainText('TOUCHLINE形式');
   await expect(page.getByTestId('tactics-board')).toBeVisible();
+  const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'3D映像をPNG保存',exact:true}).click();
+  const png=await pngPromise;expect(png.suggestedFilename()).toMatch(/\.png$/);expect((await stat((await png.path())!)).size).toBeGreaterThan(1000);
+  await page.getByRole('button',{name:'最初から3D映像を録画',exact:true}).click();await expect(page.locator('.recording-banner')).toBeVisible();
+  await page.waitForTimeout(1500);const moviePromise=page.waitForEvent('download');await page.getByRole('button',{name:'停止して保存',exact:true}).click();
+  const movie=await moviePromise;expect(movie.suggestedFilename()).toMatch(/\.(webm|mp4)$/);expect((await stat((await movie.path())!)).size).toBeGreaterThan(1000);
 });
 
 test('fits a mobile viewport and keeps all editing controls available',async({page})=>{

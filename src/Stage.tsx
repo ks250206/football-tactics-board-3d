@@ -33,7 +33,7 @@ export const Stage=forwardRef<StageHandle,Props>(function Stage(props,ref){
     {error?<div className="render-error" role="alert"><strong>3D表示を開始できません</strong><p>{error}</p><p>WebGL 2対応ブラウザで、ハードウェアアクセラレーションを有効にしてください。2D編集とJSON保存は引き続き利用できます。</p></div>:<>
       <div className="stage-top"><span className="live-tag"><i/> LIVE VIEW</span><span>{props.settings.lighting==='golden'?'GOLDEN HOUR':props.settings.lighting==='day'?'DAYLIGHT':'FLOODLIGHTS'}</span></div>
       {props.settings.camera==='eye'&&<div className="crosshair"><i/><i/></div>}
-      <div className="stage-bottom"><div><span className="eyebrow">{props.settings.camera==='eye'?"PLAYER'S EYE":props.settings.camera==='follow'?'FOLLOW CAMERA':'FREE CAMERA'}</span><strong>{String(player.number).padStart(2,'0')} <span>{player.role} · {player.team==='home'?'HOME':'AWAY'}</span></strong></div><div className="lens-data"><span>{props.settings.eye.toFixed(2)} m</span><span>H-FOV {props.settings.fov}°</span><span>{fps} FPS</span></div></div>
+      <div className="stage-bottom"><div><span className="eyebrow">{props.settings.camera==='eye'?"PLAYER'S EYE":props.settings.camera==='follow'?'FOLLOW CAMERA':'FREE CAMERA'}</span><strong>{String(player.number).padStart(2,'0')} <span>{player.role} · {player.team==='home'?'HOME':'AWAY'}</span></strong></div><div className="lens-data"><span>{props.settings.eye.toFixed(2)} m</span><span>H-FOV {props.settings.fov}°</span><span>{fps>0?`${fps} FPS`:'READY'}</span></div></div>
       <div className="look-hint">{props.settings.camera==='eye'?'ドラッグで首振り · 体の向きは変わりません':props.settings.camera==='orbit'?'ドラッグで回転 · ホイールでズーム · 右ドラッグで移動':'選択した選手を後方から追従'}</div>
     </>}
   </div>;

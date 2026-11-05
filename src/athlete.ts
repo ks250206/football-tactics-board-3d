@@ -37,20 +37,19 @@ export function createAthlete(player:Player):Athlete {
   ellipsoid(head,skin,-.087,-.008,0,.015,.029,.018);ellipsoid(head,skin,.087,-.008,0,.015,.029,.018);
   for(const s of [-1,1]) {ellipsoid(head,eyeMaterial,s*.034,.018,.081,.008,.005,.005);add(head,new T.BoxGeometry(.032,.004,.006),eyeMaterial,s*.034,.039,.078);}
   const hairMat=new T.MeshStandardMaterial({color:player.number%4===0?'#382819':'#171a16',roughness:1});
-  add(head,new T.SphereGeometry(.092,14,10,0,Math.PI*2,0,Math.PI*.53),hairMat,0,.015,-.008,1,1.18,1);
-  // Shorts bridge and independent legs keep the silhouette human at any distance.
+  add(head,new T.SphereGeometry(.092,14,10,0,Math.PI*2,0,Math.PI*.42),hairMat,0,.015,-.008,1,1.18,1);
   ellipsoid(root,shorts,0,1.025,0,.185,.125,.135);
   const hips:T.Group[]=[],knees:T.Group[]=[],arms:T.Group[]=[],elbows:T.Group[]=[];
   for(const s of [-1,1]) {
     const hip=new T.Group();hip.position.set(s*.105,1.02,0);root.add(hip);hips.push(hip);
     add(hip,new T.CylinderGeometry(.105,.095,.23,12),shorts,0,-.09,0);
     ellipsoid(hip,skin,0,-.24,.003,.078,.18,.082);
-    const knee=new T.Group();knee.position.y=-.43;hip.add(knee);knees.push(knee);
+    const knee=new T.Group();knee.position.y=-.48;hip.add(knee);knees.push(knee);
     ellipsoid(knee,skin,0,0,.012,.063,.068,.068);
-    ellipsoid(knee,socks,0,-.19,-.004,.054,.19,.06);
+    ellipsoid(knee,socks,0,-.22,-.004,.054,.22,.06);
     add(knee,new T.CylinderGeometry(.06,.058,.045,12),trim,0,-.07,0);
-    ellipsoid(knee,boots,0,-.45,.06,.065,.054,.13);
-    add(knee,new T.BoxGeometry(.12,.018,.23),boots,0,-.486,.045);
+    ellipsoid(knee,boots,0,-.48,.06,.065,.054,.13);
+    add(knee,new T.BoxGeometry(.12,.018,.23),boots,0,-.525,.045);
     const arm=new T.Group();arm.position.set(s*.245,1.405,0);root.add(arm);arms.push(arm);
     add(arm,new T.CapsuleGeometry(.065,.12,4,10),shirt,0,-.07,0);
     ellipsoid(arm,skin,0,-.18,0,.055,.105,.06);
@@ -62,6 +61,7 @@ export function createAthlete(player:Player):Athlete {
   }
   const labelMap=texture(128,80,c=>{c.fillStyle='rgba(9,17,16,.84)';c.beginPath();c.roundRect(13,8,102,60,22);c.fill();c.fillStyle=home?'#dbf4bb':'#ffb19a';c.font='600 34px sans-serif';c.textAlign='center';c.fillText(String(player.number).padStart(2,'0'),64,51);});
   const label=new T.Sprite(new T.SpriteMaterial({map:labelMap,transparent:true,depthTest:true,depthWrite:false}));label.position.y=2.02;label.scale.set(.77,.48,1);root.add(label);
+  mergeRigidParts(root);
   root.scale.setScalar(player.height/1.8);
   return {root,head,label,pose(p,time,speed){
     root.position.set(p.x,0,p.z);root.rotation.y=Math.PI/2-p.body*RAD;
@@ -91,6 +91,25 @@ export function createBall():T.Mesh {
   }
   panels.forEach(({points,color})=>{const center=points.reduce((a,b)=>a.add(b),new T.Vector3()).normalize();points.forEach((p,i)=>tri(center,p,points[(i+1)%points.length],color));});
   const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new T.Float32BufferAttribute(normals,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));
-  const bump=noiseTexture();bump.repeat.set(8,4);
   const ball=new T.Mesh(geometry,new T.MeshStandardMaterial({vertexColors:true,roughness:.6,metalness:0}));ball.castShadow=true;ball.receiveShadow=true;return ball;
+}
+
+/** Merge geometry rigidly attached to one joint/material; preserve all animated joints. */
+function mergeRigidParts(parent:T.Object3D):void {
+  for(const child of [...parent.children]) if(child instanceof T.Group) mergeRigidParts(child);
+  const batches=new Map<T.Material,T.Mesh[]>();
+  for(const child of parent.children) {
+    if(!(child instanceof T.Mesh) || Array.isArray(child.material)) continue;
+    const list=batches.get(child.material)??[];list.push(child);batches.set(child.material,list);
+  }
+  for(const [material,meshes] of batches) {
+    if(meshes.length<2)continue;
+    const geometries=meshes.map(mesh=>{mesh.updateMatrix();return mesh.geometry.clone().applyMatrix4(mesh.matrix);});
+    const geometry=mergeGeometries(geometries);
+    geometries.forEach(g=>g.dispose());
+    if(!geometry)continue;
+    const combined=new T.Mesh(geometry,material);combined.castShadow=true;combined.receiveShadow=true;
+    parent.add(combined);
+    for(const mesh of meshes){parent.remove(mesh);mesh.geometry.dispose();}
+  }
 }

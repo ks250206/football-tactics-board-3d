@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { analyse, clamp, clone, createDemo, makePass, parseProject, RAD, removeKeyframe, sample, upsert, wrap, type Pose, type Project, type ViewSettings } from './core';
+import { analyse, clamp, clone, makePass, parseProject, RAD, removeKeyframe, sample, upsert, wrap, type Pose, type Project, type ViewSettings } from './core';
+import { createScenario as createDemo } from './scenarios';
 import { Board } from './Board';
 import { Timeline } from './Timeline';
 import { Icon } from './Icon';
@@ -43,10 +44,13 @@ export default function App(){
   const addKey=useCallback(()=>{setPlaying(false);commit(upsert(projectRef.current,timeRef.current,()=>{}));setToast('現在の配置と視線をキーフレームに保存しました。');},[commit]);
   const play=useCallback(()=>{setPlaying(p=>{if(!p&&timeRef.current>=projectRef.current.duration){timeRef.current=0;setTime(0);}return !p;});},[]);
   useEffect(()=>{
-    if(!playing)return;let raf=0,last=performance.now();
-    const tick=(now:number)=>{const dt=Math.min((now-last)/1000,.1);last=now;let next=timeRef.current+dt*speed;
-      if(next>=projectRef.current.duration){if(loop&&!recorder.current)next%=projectRef.current.duration;else{next=projectRef.current.duration;setPlaying(false);}}
-      timeRef.current=next;setTime(next);if(next<projectRef.current.duration||loop)raf=requestAnimationFrame(tick);
+    if(!playing)return;let raf=0;const startedAt=performance.now(),startedTime=timeRef.current;
+    const tick=(now:number)=>{
+      let next=startedTime+(now-startedAt)/1000*speed;
+      const repeats=loop&&!recorder.current;
+      if(next>=projectRef.current.duration){if(repeats)next%=projectRef.current.duration;else{next=projectRef.current.duration;setPlaying(false);}}
+      timeRef.current=next;setTime(next);
+      if(next<projectRef.current.duration||repeats)raf=requestAnimationFrame(tick);
     };raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
   },[playing,speed,loop]);
   useEffect(()=>{setSaved('保存中…');const timeout=setTimeout(()=>{try{localStorage.setItem(STORAGE,JSON.stringify(project));setSaved('ローカル保存済み');}catch{setSaved('保存できません');setToast('ブラウザ保存に失敗しました。JSONを書き出して保存してください。');}},450);return()=>clearTimeout(timeout);},[project]);
@@ -74,7 +78,7 @@ export default function App(){
     setBallActive(id==='ball');if(id!=='ball')setSelected(id);
   };
   const move=(id:string,x:number,z:number)=>{setPlaying(false);commit(upsert(projectRef.current,timeRef.current,f=>{if(id==='ball'){f.ball={...f.ball,x,z,owner:null};}else{f.players[id]={...f.players[id],x,z};}}),`drag-${id}`);};
-  const preset=(kind:string)=>{if(!kind)return;setPlaying(false);setPassMode(false);commit(createDemo(kind));seek(0);setSelected(kind==='overlap'?'home-7':'home-6');setBallActive(false);setToast('プリセットを読み込みました。元に戻す操作で直前の編集へ戻れます。');};
+  const preset=(kind:string)=>{if(!kind)return;if(recording){setToast('録画を停止してからプリセットを変更してください。');return;}setPlaying(false);setPassMode(false);commit(createDemo(kind));seek(0);setSelected(kind==='overlap'?'home-7':'home-6');setBallActive(false);setToast('プリセットを読み込みました。元に戻す操作で直前の編集へ戻れます。');};
   const exportJSON=()=>saveBlob(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}),'touchline-sequence.json');
   const capture=()=>{const data=stage.current?.capture();if(!data){setToast('3D表示の初期化が完了していません。');return;}const link=document.createElement('a');link.href=data;link.download=`touchline-${time.toFixed(2)}s.png`;link.click();};
   const toggleRecord=()=>{
@@ -97,7 +101,7 @@ export default function App(){
   void revision;
 
   return <div className="app-shell">
-    <header className="app-header"><a className="brand" href="./" aria-label="TOUCHLINE ホーム"><span className="brand-mark"><Icon name="pitch" size={24}/></span><span><strong>TOUCHLINE<span className="brand-dot">.</span></strong><small>PLAYER PERSPECTIVE LAB</small></span></a><div className="header-middle"><span className="version-pill">TACTICS STUDIO</span><span className="local-badge"><i/>LOCAL FIRST</span></div><div className="header-actions"><ToolButton label="元に戻す" icon="undo" onClick={undo} disabled={!history.current.past.length}/><ToolButton label="やり直す" icon="redo" onClick={redo} disabled={!history.current.future.length}/><span className="toolbar-divider"/><button className="button secondary" onClick={()=>fileInput.current?.click()}><Icon name="upload" size={16}/><span>読み込み</span></button><button className="button primary" onClick={exportJSON}><Icon name="download" size={16}/><span>JSONを書き出す</span></button><ToolButton label="使い方" icon="help" onClick={()=>setHelp(true)}/></div></header>
+    <header className="app-header"><a className="brand" href="./" aria-label="TOUCHLINE ホーム"><span className="brand-mark"><Icon name="pitch" size={24}/></span><span><strong>TOUCHLINE<span className="brand-dot">.</span></strong><small>PLAYER PERSPECTIVE LAB</small></span></a><div className="header-middle"><span className="version-pill">TACTICS STUDIO</span><span className="local-badge"><i/>LOCAL FIRST</span></div><div className="header-actions"><ToolButton label="元に戻す" icon="undo" onClick={undo} disabled={!history.current.past.length||recording}/><ToolButton label="やり直す" icon="redo" onClick={redo} disabled={!history.current.future.length||recording}/><span className="toolbar-divider"/><button className="button secondary" disabled={recording} onClick={()=>fileInput.current?.click()}><Icon name="upload" size={16}/><span>読み込み</span></button><button className="button primary" onClick={exportJSON}><Icon name="download" size={16}/><span>JSONを書き出す</span></button><ToolButton label="使い方" icon="help" onClick={()=>setHelp(true)}/></div></header>
     <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" data-testid="import-file" onChange={async e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;try{if(file.size>2_000_000)throw new Error('ファイルは2 MB以下にしてください。');const imported=parseProject(await file.text());setPlaying(false);setPassMode(false);commit(imported);seek(0);setSelected(imported.roster[0].id);setToast('シーケンスを読み込みました。');}catch(error){setToast(error instanceof Error?error.message:'読み込みに失敗しました。');}}}/>
     <main><div className="project-bar"><div><span className="eyebrow">WORKSPACE <span>/</span> 01</span><input className="project-title" aria-label="シーケンス名" value={project.name} maxLength={120} onChange={e=>commit({...projectRef.current,name:e.target.value},'name')}/></div><div className="project-tools"><span className="saved-indicator"><Icon name="check" size={13}/>{saved}</span><select aria-label="プリセットを読み込む" value="" onChange={e=>preset(e.target.value)}><option value="" disabled>プリセットを読み込む</option><option value="build">首振りとビルドアップ</option><option value="through">スルーパス</option><option value="overlap">オーバーラップ</option></select></div></div>
       <div className="workspace">

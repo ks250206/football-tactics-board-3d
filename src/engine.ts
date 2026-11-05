@@ -53,6 +53,7 @@ export class TacticsEngine {
   private lastSelected='';
   private statsAt=0;
   private ticks=0;
+  private needsRender=true;
   onStats?:(fps:number)=>void;
   onAspect?:(aspect:number)=>void;
 
@@ -76,6 +77,7 @@ export class TacticsEngine {
     this.ring=new T.Mesh(new T.RingGeometry(.52,.55,48),new T.MeshBasicMaterial({color:'#d3f29b',transparent:true,opacity:.8,side:T.DoubleSide,depthWrite:false}));this.ring.rotation.x=-Math.PI/2;this.scene.add(this.ring);
     this.path=new T.Line(new T.BufferGeometry(),new T.LineDashedMaterial({color:'#d0e5ae',dashSize:.6,gapSize:.45,transparent:true,opacity:.6}));this.scene.add(this.path);
     this.controls=new OrbitControls(this.camera,this.canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.08;this.controls.maxPolarAngle=Math.PI*.475;this.controls.minDistance=2;this.controls.maxDistance=140;this.controls.enabled=false;
+    this.controls.addEventListener('change',()=>{this.needsRender=true;});
     this.composer=new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene,this.camera));
     if(quality==='cinematic'){
@@ -87,12 +89,13 @@ export class TacticsEngine {
     this.animate();
   }
   private resize(){
+    this.needsRender=true;
     this.width=Math.max(1,this.host.clientWidth);this.height=Math.max(1,this.host.clientHeight);
     this.renderer.setSize(this.width,this.height,false);this.composer.setSize(this.width,this.height);
     const ratio=this.renderer.getPixelRatio();this.fxaa.uniforms.resolution.value.set(1/(this.width*ratio),1/(this.height*ratio));
     this.camera.aspect=this.width/this.height;this.camera.fov=verticalFov(this.settings.fov,this.camera.aspect);this.camera.updateProjectionMatrix();this.onAspect?.(this.camera.aspect);
   }
-  update(project:Project,frame:Frame,selected:string,settings:ViewSettings){this.project=project;this.frame=frame;this.selected=selected;this.settings=settings;}
+  update(project:Project,frame:Frame,selected:string,settings:ViewSettings){this.project=project;this.frame=frame;this.selected=selected;this.settings=settings;this.needsRender=true;}
   private apply(){
     const {project,frame,selected,settings}=this;
     const p=frame.players[selected];if(!p)return;
@@ -134,8 +137,11 @@ export class TacticsEngine {
   }
   private animate=()=>{
     if(this.disposed)return;
-    this.apply();this.composer.render();this.canvas.dataset.ready='true';
-    const now=performance.now();this.ticks++;
+    if(this.controls.enabled)this.controls.update();
+    if(this.needsRender){
+      this.needsRender=false;this.apply();this.composer.render();this.canvas.dataset.ready='true';this.ticks++;
+    }
+    const now=performance.now();
     if(now-this.statsAt>1000){this.onStats?.(Math.round(this.ticks*1000/(now-this.statsAt)));this.statsAt=now;this.ticks=0;}
     this.animation=requestAnimationFrame(this.animate);
   };
