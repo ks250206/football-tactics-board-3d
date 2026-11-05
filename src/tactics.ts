@@ -469,14 +469,14 @@ export const LANE_ZONES: PitchZone[] = [-34, -20.16, -9.16, 9.16, 20.16].map((z,
   color: ["#72b9e8", "#e5b86f", "#b9d88b", "#e5b86f", "#72b9e8"][i],
   label: ["左ワイド", "左ハーフスペース", "中央", "右ハーフスペース", "右ワイド"][i],
 }));
-/** User-specified trapezoid: penalty-area front corners to goal-area front corners.
- * Boundaries align with goal-post → penalty-area-corner rays. No scoring percentages. */
+/** User-specified trapezoid: the two goal posts and the two front goal-area corners.
+ * This occupies the goal-mouth side of the goal area. No scoring percentages. */
 export const BIELSA_ZONES = [-1, 1].map((sign) => ({
   points: [
-    [sign * 36, -20.16],
     [sign * 47, -9.16],
+    [sign * 52.5, -3.66],
+    [sign * 52.5, 3.66],
     [sign * 47, 9.16],
-    [sign * 36, 20.16],
   ],
   color: "#f2c35f",
 }));

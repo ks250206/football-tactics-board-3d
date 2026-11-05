@@ -91,7 +91,7 @@ test("renders compact keyboard focus, five lanes, Bielsa trapezoids and optional
   await expect(page.getByTestId("xg-readout")).toContainText("未学習・未校正");
   await expect(page.getByTestId("bielsa-zone").nth(1)).toHaveAttribute(
     "points",
-    "36,-20.16 47,-9.16 47,9.16 36,20.16",
+    "47,-9.16 52.5,-3.66 52.5,3.66 47,9.16",
   );
   await page.getByRole("button", { name: "自由", exact: true }).click();
   await mkdir("artifacts", { recursive: true });

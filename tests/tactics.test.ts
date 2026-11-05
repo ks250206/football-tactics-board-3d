@@ -196,14 +196,14 @@ describe("phases and viewing", () => {
     expect(fpsLook(p, 100, 1000, 0.2)).toMatchObject({ body: 110, head: 0, pitch: -45 });
     expect(fpsPose({ ...p, z: 34 }, 1, 0, 0.05).z).toBe(34);
   });
-  it("uses the user-specified Bielsa trapezoid between the two area front lines", () => {
+  it("connects the goal posts to the front goal-area corners on both ends", () => {
     expect(BIELSA_ZONES[1].points).toEqual([
-      [36, -20.16],
       [47, -9.16],
+      [52.5, -3.66],
+      [52.5, 3.66],
       [47, 9.16],
-      [36, 20.16],
     ]);
-    expect(BIELSA_ZONES[0].points[0]).toEqual([-36, -20.16]);
+    expect(BIELSA_ZONES[0].points).toEqual(BIELSA_ZONES[1].points.map(([x, z]) => [-x, z]));
   });
   it("shows only a distance/angle illustration for eligible ground shots and mirrors teams", () => {
     const near = illustrativeXg({ x: 41, z: 0, y: 0.11 }, "home"),
