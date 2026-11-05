@@ -136,6 +136,7 @@ test("renders compact keyboard focus, five lanes, Bielsa trapezoids and optional
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("selection-ring")).toHaveAttribute("r", "2.5");
   expect(await token.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none");
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
   await page.getByRole("button", { name: "5レーン", exact: true }).click();
   await page.getByRole("button", { name: "ビエルサゾーン", exact: true }).click();
   await page.getByRole("button", { name: "参考xG", exact: true }).click();
@@ -209,6 +210,16 @@ test("controls the player with simultaneous WASD and free mouse look, sensitivit
   await page.waitForTimeout(150);
   await expect(stopped).toHaveAttribute("transform", transform!);
   await page.getByRole("button", { name: "ボールを見る", exact: true }).click();
+  await page.getByRole("button", { name: "体も顔もボールへ", exact: true }).click();
+  await expect(page.getByTestId("head-slider")).toHaveValue("0");
+  const faced = await saved(page),
+    f = faced.frames[0],
+    p = f.players["home-6"];
+  const holder = f.ball.owner ? f.players[f.ball.owner] : null;
+  const bx = holder ? holder.x + Math.cos((holder.body * Math.PI) / 180) * 0.48 : f.ball.x,
+    bz = holder ? holder.z + Math.sin((holder.body * Math.PI) / 180) * 0.48 : f.ball.z;
+  const bearing = (Math.atan2(bz - p.z, bx - p.x) * 180) / Math.PI;
+  expect(Math.abs(((p.body - bearing + 540) % 360) - 180)).toBeLessThan(0.001);
   await expect(
     page.getByRole("button", { name: "ボールを自動で見る", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");

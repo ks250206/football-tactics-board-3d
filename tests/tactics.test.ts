@@ -8,6 +8,7 @@ import {
   defencePlan,
   formationLines,
   FORMATIONS,
+  faceBall,
   fpsLook,
   fpsStep,
   fpsPose,
@@ -67,6 +68,23 @@ describe("formations", () => {
     for (const t of [1.3, 1.9, 2, 2.1, 2.3])
       for (const key of ["x", "z", "y", "arc"] as const)
         expect(sample(next, t).ball[key]).toBeCloseTo(sample(base, t).ball[key], 10);
+  });
+  it("can compress the outfield depth to 6 m while retaining the midpoint and selected width", () => {
+    const project = createDemo();
+    const extent = (compactness: number) => {
+      const poses = shapePoses(project, { ...DEFAULT_SHAPE, compactness });
+      const values = Object.entries(poses)
+        .filter(([id]) => id !== "home-1")
+        .map(([, p]) => p);
+      return {
+        depth: Math.max(...values.map((p) => p.x)) - Math.min(...values.map((p) => p.x)),
+        width: Math.max(...values.map((p) => p.z)) - Math.min(...values.map((p) => p.z)),
+      };
+    };
+    expect(extent(0).depth).toBeCloseTo(52);
+    expect(extent(50).depth).toBeCloseTo(37);
+    expect(extent(100).depth).toBeCloseTo(6);
+    expect(extent(100).width).toBeCloseTo(DEFAULT_SHAPE.width);
   });
   it("reverses attacking/defensive thirds and positive field-height movement for away", () => {
     const project = createDemo();
@@ -230,6 +248,18 @@ describe("phases and viewing", () => {
     const f = sample(createDemo(), 0),
       ballBefore = ballPosition(f);
     expect(withBallGaze(f, 1.72).ball).toEqual(ballBefore);
+  });
+  it("aligns both body and face to a ball behind the player and centres the neck", () => {
+    const pose = { x: 0, z: 0, body: 0, head: 70, pitch: 10 },
+      ball = { x: -20, z: 5, y: 0.11 };
+    const faced = faceBall(pose, ball);
+    expect(faced.head).toBe(0);
+    expect(faced.body).toBeCloseTo(Math.atan2(5, -20) / RAD);
+    expect(faced.pitch).toBeLessThan(0);
+    expect(faced.x).toBe(0);
+    expect(faced.z).toBe(0);
+    expect(pose.head).toBe(70);
+    expect(faceBall(pose, { x: 0, z: 0, y: 0.11 })).toEqual({ ...pose, head: 0 });
   });
   it("normalises diagonal FPS speed, respects yaw, sensitivity and pitch limits", () => {
     const p = { x: 0, z: 0, body: 90, head: 0, pitch: 0 };

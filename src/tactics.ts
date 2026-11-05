@@ -83,8 +83,10 @@ export function formationLines(value: string): number[] {
 export function shapePoses(project: Project, options: ShapeSettings): Record<string, Pose> {
   const lines = formationLines(options.formation),
     sign = options.team === "home" ? 1 : -1;
-  const length = 52 - clamp(options.compactness, 0, 100) * 0.3,
-    width = clamp(options.width, 20, 62);
+  const compactness = clamp(options.compactness, 0, 100);
+  // Preserve the original midpoint, with a much tighter upper half of the control.
+  const length = compactness <= 50 ? 52 - compactness * 0.3 : 37 - (compactness - 50) * 0.62;
+  const width = clamp(options.width, 20, 62);
   const center = clamp(
     { defensive: -27, middle: 0, attacking: 27 }[options.third] + clamp(options.tilt, -20, 20),
     -50 + length / 2,
@@ -150,6 +152,17 @@ export function gazeAtBall(
     ...pose,
     body: wrap(bearing - head),
     head,
+    pitch: clamp(Math.atan2(ball.y - eye, d) / RAD, -45, 45),
+  };
+}
+/** Align both absolute body and face yaw to the ball; keep the neck centred. */
+export function faceBall(pose: Pose, ball: { x: number; z: number; y: number }, eye = 1.72): Pose {
+  const d = distance(pose, ball);
+  if (d < 0.01) return { ...pose, head: 0 };
+  return {
+    ...pose,
+    body: wrap(Math.atan2(ball.z - pose.z, ball.x - pose.x) / RAD),
+    head: 0,
     pitch: clamp(Math.atan2(ball.y - eye, d) / RAD, -45, 45),
   };
 }

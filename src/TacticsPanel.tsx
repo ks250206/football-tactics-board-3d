@@ -144,8 +144,8 @@ export function TacticsPanel({ project, disabled, onShape, onDefence, onPhase }:
                 </button>
               </div>
               <p>
-                各列の合計10人＋GK。配置とバーは現在時刻に適用。左右の偏りは攻撃方向基準で −
-                が左、＋ が右。横幅を保って寄せます。
+                各列の合計10人＋GK。配置とバーは現在時刻に適用。コンパクトさ100%で前後幅6
+                m。左右の偏りは攻撃方向基準で − が左、＋ が右。横幅を保って寄せます。
               </p>
             </div>
             <div className="tactics-group">

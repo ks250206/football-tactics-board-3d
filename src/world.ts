@@ -138,8 +138,8 @@ export function createWorld(renderer:T.WebGLRenderer, quality:Quality) {
   let lighting:Lighting='golden';
   function setLighting(mode:Lighting) {
     lighting=mode;const night=mode==='night',day=mode==='day';
-    hemi.color.set(night?'#718baa':day?'#d4ebff':'#c9deee');hemi.groundColor.set(night?'#20392c':'#354b28');hemi.intensity=night?.65:day?1.2:.85;
-    sun.color.set(night?'#e4eeff':day?'#fff4dc':'#ffdda9');sun.intensity=night?2.8:day?3.3:3.3;
+    hemi.color.set(night?'#718baa':day?'#d4ebff':'#c9deee');hemi.groundColor.set(night?'#20392c':day?'#6e716b':'#354b28');hemi.intensity=night?.65:day?1.2:.85;
+    sun.color.set(night?'#e4eeff':day?'#ffffff':'#ffdda9');sun.intensity=night?2.8:day?3.3:3.3;
     fill.intensity=night?1.3:.55;bulb.emissiveIntensity=night?8:.7;led.emissiveIntensity=night?1.3:.3;
     skyMaterial.uniforms.top.value.set(night?'#040b17':day?'#2879b2':'#3c78a0');skyMaterial.uniforms.bottom.value.set(night?'#172a40':day?'#bdd9e7':'#f0c49a');skyMaterial.uniforms.sunPower.value=night?0:day?.55:.85;
   }
