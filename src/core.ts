@@ -4,11 +4,18 @@ export interface Player { id: string; number: number; role: string; team: Team; 
 export interface Pose { x: number; z: number; body: number; head: number; pitch: number }
 export interface Ball { x: number; z: number; y: number; owner: string | null; arc: number }
 export interface Frame { t: number; players: Record<string, Pose>; ball: Ball }
-export interface Project { version: 1; name: string; duration: number; roster: Player[]; frames: Frame[] }
+export interface DefencePlan { team: Team; mode: 'zone' | 'man'; anchors: Record<string, {x:number;z:number}>; reference: {x:number;z:number}; marks: Record<string,string> }
+export interface Project { version: 1; name: string; duration: number; roster: Player[]; frames: Frame[]; defence?: DefencePlan }
 export type CameraMode = 'eye' | 'follow' | 'orbit';
 export type Lighting = 'golden' | 'day' | 'night';
 export type Quality = 'low' | 'balanced' | 'cinematic';
-export interface ViewSettings { camera: CameraMode; lighting: Lighting; quality: Quality; fov: number; eye: number; labels: boolean; paths: boolean; vision: boolean; bob: boolean }
+export interface ViewSettings { camera: CameraMode; lighting: Lighting; quality: Quality; fov: number; eye: number; labels: boolean; paths: boolean; vision: boolean; bob: boolean; ballLook: boolean; fps: boolean; sensitivity: number; lanes: boolean; bielsa: boolean; xg: boolean }
+/** Role text is editable/imported metadata; reserve exactly one keeper slot per team. */
+export function squad(roster:Player[],team:Team) {
+  const players=roster.filter(p=>p.team===team);
+  const keeper=players.find(p=>p.role==='GK')??players[0];
+  return {keeper,outfield:players.filter(p=>p.id!==keeper.id)};
+}
 export const RAD = Math.PI / 180;
 export const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -217,5 +224,21 @@ export function parseProject(text: string): Project {
     return { t, players, ball:{x:num(b.x,-60,60),z:num(b.z,-42,42),y:num(b.y,.05,30),owner:b.owner,arc:num(b.arc,0,12)} };
   });
   if(frames[0].t !== 0 || frames.at(-1)!.t !== duration) return fail();
-  return { version:1, name:raw.name, duration, roster, frames };
+  let defence: DefencePlan | undefined;
+  if(raw.defence !== undefined) {
+    const d=raw.defence as DefencePlan;
+    if(!d || (d.team!=='home' && d.team!=='away') || (d.mode!=='zone' && d.mode!=='man') || !d.anchors || !d.reference || !d.marks) return fail();
+    const anchors: DefencePlan['anchors']={}, marks: Record<string,string>={};
+    const targets=new Set<string>();
+    for(const p of roster.filter(p=>p.team===d.team)) {
+      const a=d.anchors[p.id];if(!a)return fail();
+      anchors[p.id]={x:num(a.x,-52.5,52.5),z:num(a.z,-34,34)};
+      if(d.mode==='man' && p.id!==squad(roster,d.team).keeper.id) {
+        const target=squad(roster,d.team==='home'?'away':'home').outfield.find(q=>q.id===d.marks[p.id]);
+        if(!target || targets.has(target.id))return fail();targets.add(target.id);marks[p.id]=target.id;
+      }
+    }
+    defence={team:d.team,mode:d.mode,anchors,reference:{x:num(d.reference.x,-60,60),z:num(d.reference.z,-42,42)},marks};
+  }
+  return { version:1, name:raw.name, duration, roster, frames, ...(defence?{defence}:{}) };
 }

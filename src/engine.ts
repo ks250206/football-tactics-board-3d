@@ -10,6 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { createAthlete, createBall, type Athlete } from './athlete';
 import { createWorld } from './world';
+import { BIELSA_ZONES, LANE_ZONES, resolveDefence } from './tactics';
 import { distance, RAD, sample, verticalFov, type Frame, type Project, type Quality, type ViewSettings } from './core';
 
 function disposeObject(root:T.Object3D) {
@@ -37,6 +38,9 @@ export class TacticsEngine {
   private athletes=new Map<string,Athlete>();
   private ball=createBall();
   private ring:T.Mesh;
+  private lanes=new T.Group();
+  private bielsa=new T.Group();
+  private captureRequest=()=>{this.needsRender=true;};
   private path:T.Line;
   private resizeObserver:ResizeObserver;
   private animation=0;
@@ -74,11 +78,24 @@ export class TacticsEngine {
     this.scene.fog=new T.FogExp2('#d9d2b9',.0038);
     for(const player of project.roster){const athlete=createAthlete(player);this.athletes.set(player.id,athlete);this.scene.add(athlete.root);}
     this.scene.add(this.ball);
+    for(const zone of LANE_ZONES){
+      const mesh=new T.Mesh(new T.PlaneGeometry(zone.length,zone.width),new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.2,depthWrite:false,side:T.DoubleSide}));
+      mesh.rotation.x=-Math.PI/2;mesh.position.set(zone.x+zone.length/2,.012,zone.z+zone.width/2);this.lanes.add(mesh);
+    }
+    for(const zone of BIELSA_ZONES){
+      const geometry=new T.BufferGeometry(),vertices:number[]=[];
+      for(const i of [1,2])for(const index of [0,i,i+1]){const [x,z]=zone.points[index];vertices.push(x,.016,z);}
+      geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+      this.bielsa.add(new T.Mesh(geometry,new T.MeshBasicMaterial({color:zone.color,transparent:true,opacity:.3,depthWrite:false,side:T.DoubleSide})));
+      const border=new T.BufferGeometry().setFromPoints([...zone.points,zone.points[0]].map(([x,z])=>new T.Vector3(x,.018,z)));
+      this.bielsa.add(new T.Line(border,new T.LineBasicMaterial({color:zone.color,transparent:true,opacity:.85})));
+    }
+    this.scene.add(this.lanes,this.bielsa);
     this.ring=new T.Mesh(new T.RingGeometry(.52,.55,48),new T.MeshBasicMaterial({color:'#d3f29b',transparent:true,opacity:.8,side:T.DoubleSide,depthWrite:false}));this.ring.rotation.x=-Math.PI/2;this.scene.add(this.ring);
     this.path=new T.Line(new T.BufferGeometry(),new T.LineDashedMaterial({color:'#d0e5ae',dashSize:.6,gapSize:.45,transparent:true,opacity:.6}));this.scene.add(this.path);
     this.controls=new OrbitControls(this.camera,this.canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.08;this.controls.maxPolarAngle=Math.PI*.475;this.controls.minDistance=2;this.controls.maxDistance=140;this.controls.enabled=false;
     this.controls.addEventListener('change',()=>{this.needsRender=true;});
-    this.canvas.addEventListener('touchline-capture-request',()=>{this.needsRender=true;});
+    this.canvas.addEventListener('touchline-capture-request',this.captureRequest);
     this.composer=new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene,this.camera));
     if(quality==='cinematic'){
@@ -100,7 +117,7 @@ export class TacticsEngine {
   private apply(){
     const {project,frame,selected,settings}=this;
     const p=frame.players[selected];if(!p)return;
-    const a=sample(project,Math.max(0,frame.t-.04)),b=sample(project,Math.min(project.duration,frame.t+.04));
+    const a=resolveDefence(project,sample(project,Math.max(0,frame.t-.04))),b=resolveDefence(project,sample(project,Math.min(project.duration,frame.t+.04)));
     const dt=Math.max(.001,b.t-a.t);
     let selectedSpeed=0;
     this.athletes.forEach((athlete,id)=>{
@@ -108,10 +125,11 @@ export class TacticsEngine {
       athlete.pose(frame.players[id],frame.t,speed);athlete.label.visible=settings.labels;
       athlete.root.visible=!(settings.camera==='eye'&&id===selected);if(id===selected)selectedSpeed=speed;
     });
+    this.lanes.visible=settings.lanes;this.bielsa.visible=settings.bielsa;
     this.ball.position.set(frame.ball.x,frame.ball.y,frame.ball.z);this.ball.rotation.set(frame.ball.z/.11,0,-frame.ball.x/.11);
     this.ring.position.set(p.x,.018,p.z);this.ring.visible=settings.camera!=='eye';
     if(this.lastProject!==project||this.lastSelected!==selected){
-      const geometry=new T.BufferGeometry().setFromPoints(project.frames.map(f=>new T.Vector3(f.players[selected].x,.035,f.players[selected].z)));
+      const geometry=new T.BufferGeometry().setFromPoints(project.frames.map(f=>{const pose=resolveDefence(project,f).players[selected];return new T.Vector3(pose.x,.035,pose.z);}));
       this.path.geometry.dispose();this.path.geometry=geometry;this.path.computeLineDistances();this.lastProject=project;this.lastSelected=selected;
     }
     this.path.visible=settings.paths&&settings.camera!=='eye';
@@ -148,7 +166,7 @@ export class TacticsEngine {
   };
   capture(){this.apply();this.composer.render();this.canvas.dispatchEvent(new Event('touchline-frame'));return this.canvas.toDataURL('image/png');}
   dispose(){
-    this.disposed=true;cancelAnimationFrame(this.animation);this.resizeObserver.disconnect();this.controls.dispose();
+    this.disposed=true;cancelAnimationFrame(this.animation);this.resizeObserver.disconnect();this.canvas.removeEventListener('touchline-capture-request',this.captureRequest);this.controls.dispose();
     for(const pass of this.composer.passes)pass.dispose();this.composer.dispose();disposeObject(this.scene);this.environment.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.canvas.remove();
   }
 }
