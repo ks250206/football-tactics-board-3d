@@ -1,0 +1,45 @@
+name: Verify pinned xG models
+on:
+  push:
+    branches: [main, 'codex/issue-3-xg-heatmap-shot-lanes']
+    paths: ['src/xg/**', 'scripts/*xg*', '.github/workflows/xg-model-parity.yml']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: xg-parity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify and prepare immutable model assets
+        run: node scripts/prepare-xg.mjs
+      - name: Install native test oracle
+        run: python -m pip install 'xgboost==3.1.1' 'numpy==2.3.4'
+      - name: Compare TypeScript with native XGBoost
+        run: |
+          python scripts/xg-reference.py
+          node --experimental-strip-types scripts/xg-parity.mjs
+      - name: Archive verification sources
+        if: always()
+        run: |
+          mkdir -p artifacts
+          git archive --format=zip --output=artifacts/touchline-source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xg-model-parity
+          path: |
+            artifacts/
+            public/models/adamsaidane/
+          retention-days: 14
