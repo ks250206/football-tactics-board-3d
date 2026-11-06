@@ -8,14 +8,15 @@
     "pnpm": ">=12 <13"
   },
   "scripts": {
-    "dev": "vp dev --host 0.0.0.0",
-    "build": "tsc --noEmit && vp build",
+    "dev": "node scripts/prepare-xg.mjs && vp dev --host 0.0.0.0",
+    "build": "node scripts/prepare-xg.mjs && tsc --noEmit && vp build",
     "preview": "vp preview --host 0.0.0.0",
-    "test": "vp test run",
+    "test": "node scripts/prepare-xg.mjs && vp test run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "format": "vp fmt",
-    "docs:screenshots": "node scripts/capture-readme.mjs"
+    "docs:screenshots": "node scripts/capture-readme.mjs",
+    "models:prepare": "node scripts/prepare-xg.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

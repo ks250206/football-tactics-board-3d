@@ -139,10 +139,10 @@ test("renders compact keyboard focus, five lanes, Bielsa trapezoids and optional
   await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
   await page.getByRole("button", { name: "5レーン", exact: true }).click();
   await page.getByRole("button", { name: "ビエルサゾーン", exact: true }).click();
-  await page.getByRole("button", { name: "参考xG", exact: true }).click();
+  await page.getByRole("button", { name: "学習済みxG", exact: true }).click();
   await expect(page.getByTestId("lane-zone")).toHaveCount(5);
   await expect(page.getByTestId("bielsa-zone")).toHaveCount(2);
-  await expect(page.getByTestId("xg-readout")).toContainText("未学習・未校正");
+  await expect(page.getByTestId("xg-readout")).toContainText("校正は未検証");
   await expect(page.getByTestId("bielsa-zone").nth(1)).toHaveAttribute(
     "points",
     "36,-20.16 52.5,-3.66 52.5,3.66 36,20.16",
