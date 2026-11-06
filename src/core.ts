@@ -9,7 +9,7 @@ export interface Project { version: 1; name: string; duration: number; roster: P
 export type CameraMode = 'eye' | 'follow' | 'orbit';
 export type Lighting = 'golden' | 'day' | 'night';
 export type Quality = 'low' | 'balanced' | 'cinematic';
-export interface ViewSettings { camera: CameraMode; lighting: Lighting; quality: Quality; fov: number; eye: number; labels: boolean; paths: boolean; vision: boolean; bob: boolean; ballLook: boolean; fps: boolean; sensitivity: number; lanes: boolean; bielsa: boolean; xg: boolean }
+export interface ViewSettings { camera: CameraMode; lighting: Lighting; quality: Quality; fov: number; eye: number; labels: boolean; paths: boolean; vision: boolean; bob: boolean; ballLook: boolean; fps: boolean; sensitivity: number; lanes: boolean; bielsa: boolean }
 /** Role text is editable/imported metadata; reserve exactly one keeper slot per team. */
 export function squad(roster:Player[],team:Team) {
   const players=roster.filter(p=>p.team===team);

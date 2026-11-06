@@ -156,7 +156,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
       instance.onStats = setFps;
       instance.onAspect = (aspect) => current.current.onAspect(aspect);
       engine.current = instance;
-      current.current.onAspect(host.current.clientWidth / Math.max(1, host.current.clientHeight));
+      if(host.current.clientWidth&&host.current.clientHeight) current.current.onAspect(host.current.clientWidth / host.current.clientHeight);
       const lost = (e: Event) => {
         e.preventDefault();
         setError(

@@ -1,3 +1,4 @@
+import { popover } from './ui';
 import { test, expect } from '@playwright/test';
 import { mkdir, stat } from 'node:fs/promises';
 
@@ -7,8 +8,9 @@ test('renders WebGL, changes camera and produces studio screenshots',async({page
   await expect(page.getByRole('alert')).toHaveCount(0);await expect(page.getByTestId('tactics-board')).toBeVisible();
   await mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/studio-desktop.png',fullPage:true});
   await page.getByRole('button',{name:'自由',exact:true}).click();await page.waitForTimeout(800);await page.screenshot({path:'artifacts/orbit.png',fullPage:true});
+  await popover(page,'カメラ設定');
   await page.getByLabel('ライティング',{exact:true}).selectOption('night');await page.waitForTimeout(800);await page.screenshot({path:'artifacts/night.png',fullPage:true});
-  await page.getByRole('button',{name:'一人称',exact:true}).click();await page.getByLabel('描画品質',{exact:true}).selectOption('cinematic');
+  await page.getByRole('button',{name:'一人称',exact:true}).click();await popover(page,'カメラ設定');await page.getByLabel('描画品質',{exact:true}).selectOption('cinematic');await popover(page,'カメラ設定',false);
   await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-ready','true');await page.waitForTimeout(800);await page.screenshot({path:'artifacts/cinematic.png',fullPage:true});
   expect(errors.filter(e=>!e.includes('favicon.ico'))).toEqual([]);
 });
@@ -16,7 +18,7 @@ test('renders WebGL, changes camera and produces studio screenshots',async({page
 test('edits body and gaze independently, scrubs, auto-keys and undoes',async({page})=>{
   await page.goto('/');await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-ready','true');
   // This test exercises authored body/neck independence rather than automatic ball gaze.
-  await page.getByRole('button',{name:'ボールを自動で見る',exact:true}).click();
+  await popover(page,'カメラ設定');await page.getByRole('button',{name:'ボールを自動で見る',exact:true}).click();await popover(page,'カメラ設定',false);
   await page.getByTestId('timeline-rail').scrollIntoViewIfNeeded();
   const rail=await page.getByTestId('timeline-rail').boundingBox();if(!rail)throw new Error('Missing timeline');
   await page.mouse.click(rail.x+rail.width*.18,rail.y+6);
@@ -42,6 +44,7 @@ test('drags a player, authors a pass and exports JSON, PNG and video',async({pag
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'JSONを書き出す'}).click();const download=await downloadPromise;expect(download.suggestedFilename()).toBe('touchline-sequence.json');
   await page.getByTestId('import-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"version":9}')});await expect(page.getByRole('status')).toContainText('TOUCHLINE形式');
   await expect(page.getByTestId('tactics-board')).toBeVisible();
+  await popover(page,'映像出力');
   const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'3D映像をPNG保存',exact:true}).click();
   const png=await pngPromise;expect(png.suggestedFilename()).toMatch(/\.png$/);expect((await stat((await png.path())!)).size).toBeGreaterThan(1000);
   // Observe from before recording starts; verify automatic end-of-sequence export.
@@ -56,7 +59,8 @@ test('drags a player, authors a pass and exports JSON, PNG and video',async({pag
 
 test('fits a mobile viewport and keeps all editing controls available',async({page})=>{
   await page.setViewportSize({width:390,height:844});await page.goto('/');await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-ready','true');
-  await expect(page.getByLabel('描画品質',{exact:true})).toHaveValue('low');
+  await page.getByLabel('モバイル表示').getByRole('button',{name:'3D',exact:true}).click();await popover(page,'カメラ設定');
+  await expect(page.getByLabel('描画品質',{exact:true})).toHaveValue('low');await popover(page,'カメラ設定',false);
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1);expect(overflow).toBe(false);
   await mkdir('artifacts',{recursive:true});await page.screenshot({path:'artifacts/studio-mobile.png',fullPage:true});
 });
