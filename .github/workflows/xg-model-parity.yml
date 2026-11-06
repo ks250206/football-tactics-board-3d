@@ -29,6 +29,7 @@ jobs:
       - name: Compare TypeScript with native XGBoost
         run: |
           python scripts/xg-reference.py
+          python scripts/xg-browser-reference.py --check
           node --experimental-strip-types scripts/xg-parity.mjs
       - name: Archive verification sources
         if: always()

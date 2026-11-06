@@ -29,11 +29,13 @@ export interface Request { key: string; snapshot: Snapshot; heatmap: boolean }
 export interface Response extends AnalysisResult { key: string; team: Team; time: number }
 export type ModelSet = Record<ModelId, Booster>;
 
+/** Capture only analysis inputs: pose orientation and ball arc must not invalidate xG.
+ * The resolved ball position is retained, including real movement when its owner turns. */
 export function snapshot(project: Project, frame: Frame, team: Team, selected: string, oneOnOne: boolean): Snapshot {
   const keepers = new Set([squad(project.roster, 'home').keeper?.id, squad(project.roster, 'away').keeper?.id]);
   return {
-    team, time: frame.t, shot: { ...frame.ball }, shooter: frame.ball.owner ?? selected, oneOnOne,
-    bodies: project.roster.map(p => ({ id: p.id, ...frame.players[p.id], height: p.height, keeper: keepers.has(p.id), opponent: p.team !== team })),
+    team, time: frame.t, shot: { x: frame.ball.x, z: frame.ball.z, y: frame.ball.y }, shooter: frame.ball.owner ?? selected, oneOnOne,
+    bodies: project.roster.map(p => ({ id: p.id, x: frame.players[p.id].x, z: frame.players[p.id].z, height: p.height, keeper: keepers.has(p.id), opponent: p.team !== team })),
   };
 }
 function piecewise(value: number, source: readonly number[], target: readonly number[]) {
