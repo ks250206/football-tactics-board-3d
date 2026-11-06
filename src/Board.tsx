@@ -1,8 +1,10 @@
 import { useMemo, useRef } from 'react';
+import { XgBoardOverlay } from './xg/BoardOverlay';
+import type { XgVisuals } from './xg/visuals';
 import { BIELSA_ZONES, LANE_ZONES, resolveDefence } from './tactics';
 import { clamp, RAD, type Frame, type Project, type Sight, type ViewSettings } from './core';
-interface Props { project:Project;frame:Frame;selected:string;focused:string;ballActive:boolean;settings:ViewSettings;sights:Sight[];passMode:boolean;onPick:(id:string)=>void;onMove:(id:string,x:number,z:number)=>void;onPause:()=>void }
-export function Board({project,frame,selected,focused,ballActive,settings,sights,passMode,onPick,onMove,onPause}:Props){
+interface Props { xg?:XgVisuals;project:Project;frame:Frame;selected:string;focused:string;ballActive:boolean;settings:ViewSettings;sights:Sight[];passMode:boolean;onPick:(id:string)=>void;onMove:(id:string,x:number,z:number)=>void;onPause:()=>void }
+export function Board({xg,project,frame,selected,focused,ballActive,settings,sights,passMode,onPick,onMove,onPause}:Props){
   const svg=useRef<SVGSVGElement>(null),drag=useRef<{id:string;dx:number;dz:number}|null>(null);
   const traces=useMemo(()=>project.frames.map(f=>resolveDefence(project,f)),[project]);
   const p=frame.players[focused],yaw=(p.body+p.head)*RAD;
@@ -20,6 +22,7 @@ export function Board({project,frame,selected,focused,ballActive,settings,sights
       {settings.lanes&&LANE_ZONES.map((zone,i)=><g key={i} data-testid="lane-zone"><rect x={zone.x} y={zone.z} width={zone.length} height={zone.width} fill={zone.color} opacity=".62"/><path d={`M-52.5,${zone.z}H52.5`} stroke="#edf3fb" strokeOpacity=".8" strokeWidth=".22" strokeDasharray="1.2 .8"/><rect x="-51" y={zone.z+1} width={zone.label.length*1.6+2} height="3.2" rx=".5" fill="#132737" fillOpacity=".85"/><text x="-50" y={zone.z+3.2} fill="#ffffff" fontSize="1.6" fontWeight="600">{zone.label}</text></g>)}
       {settings.bielsa&&BIELSA_ZONES.map((zone,i)=><polygon key={i} data-testid="bielsa-zone" points={zone.points.map(p=>p.join(',')).join(' ')} fill={zone.color} fillOpacity=".38" stroke={zone.color} strokeWidth=".55"/>)}
     </g>
+    <XgBoardOverlay visuals={xg}/>
     <g fill="none" stroke="#e1e8ec" strokeOpacity=".7" strokeWidth=".25"><rect x="-52.5" y="-34" width="105" height="68"/><path d="M0-34V34"/><circle r="9.15"/><circle r=".25" fill="#e1e8ec"/>
       {[-1,1].map(sign=><g key={sign} transform={`scale(${sign} 1)`}><path d="M52.5-20.16H36V20.16H52.5M52.5-9.16H47V9.16H52.5"/><path d="M36-7.3a9.15 9.15 0 0 0 0 14.6"/><circle cx="41.5" r=".28" fill="#e1e8ec"/><path d="M52.5-3.66H55V3.66H52.5" strokeOpacity=".8"/></g>)}
     </g>

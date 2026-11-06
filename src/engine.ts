@@ -1,4 +1,6 @@
 import * as T from 'three';
+import { XgOverlay3D } from './xg/Overlay3D';
+import type { XgVisuals } from './xg/visuals';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -40,6 +42,7 @@ export class TacticsEngine {
   private ring:T.Mesh;
   private lanes=new T.Group();
   private bielsa=new T.Group();
+  private xgOverlay=new XgOverlay3D();
   private captureRequest=()=>{this.needsRender=true;};
   private path:T.Line;
   private resizeObserver:ResizeObserver;
@@ -90,7 +93,7 @@ export class TacticsEngine {
       const border=new T.BufferGeometry().setFromPoints([...zone.points,zone.points[0]].map(([x,z])=>new T.Vector3(x,.018,z)));
       const outline=new T.Line(border,new T.LineBasicMaterial({color:zone.color,transparent:true,opacity:1,depthWrite:false}));outline.renderOrder=-10;this.bielsa.add(outline);
     }
-    this.scene.add(this.lanes,this.bielsa);
+    this.scene.add(this.lanes,this.bielsa,this.xgOverlay.root);
     this.ring=new T.Mesh(new T.RingGeometry(.52,.55,48),new T.MeshBasicMaterial({color:'#cbe0ff',transparent:true,opacity:.8,side:T.DoubleSide,depthWrite:false}));this.ring.rotation.x=-Math.PI/2;this.scene.add(this.ring);
     this.path=new T.Line(new T.BufferGeometry(),new T.LineDashedMaterial({color:'#c7d7f0',dashSize:.6,gapSize:.45,transparent:true,opacity:.6}));this.scene.add(this.path);
     this.controls=new OrbitControls(this.camera,this.canvas);this.controls.enableDamping=true;this.controls.dampingFactor=.08;this.controls.maxPolarAngle=Math.PI*.475;this.controls.minDistance=2;this.controls.maxDistance=140;this.controls.enabled=false;
@@ -113,7 +116,7 @@ export class TacticsEngine {
     const ratio=this.renderer.getPixelRatio();this.fxaa.uniforms.resolution.value.set(1/(this.width*ratio),1/(this.height*ratio));
     this.camera.aspect=this.width/this.height;this.camera.fov=verticalFov(this.settings.fov,this.camera.aspect);this.camera.updateProjectionMatrix();this.onAspect?.(this.camera.aspect);
   }
-  update(project:Project,frame:Frame,selected:string,settings:ViewSettings){this.project=project;this.frame=frame;this.selected=selected;this.settings=settings;this.needsRender=true;}
+  update(project:Project,frame:Frame,selected:string,settings:ViewSettings,xg?:XgVisuals){this.project=project;this.frame=frame;this.selected=selected;this.settings=settings;this.xgOverlay.update(xg);this.canvas.dataset.xgHeatmapCells=String(xg?.heatmap.length??0);this.canvas.dataset.xgGoalCells=String(xg?.geometry?.cells.length??0);this.needsRender=true;}
   private apply(){
     const {project,frame,selected,settings}=this;
     const p=frame.players[selected];if(!p)return;

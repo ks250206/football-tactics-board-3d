@@ -8,3 +8,7 @@ test-results/
 .env*
 !.env.example
 artifacts/
+
+# Verified immutable assets are prepared at build time and served locally.
+public/models/adamsaidane/*.json
+public/models/adamsaidane/*.tmp

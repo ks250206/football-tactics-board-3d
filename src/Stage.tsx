@@ -3,6 +3,7 @@ import type { Frame, Project, ViewSettings } from "./core";
 import { clamp } from "./core";
 import { TacticsEngine } from "./engine";
 import type { FpsInput } from "./tactics";
+import type { XgVisuals } from "./xg/visuals";
 
 export interface StageHandle {
   capture: () => string | undefined;
@@ -10,6 +11,7 @@ export interface StageHandle {
   fullscreen: () => void;
 }
 interface Props {
+  xg?: XgVisuals;
   project: Project;
   frame: Frame;
   selected: string;
@@ -172,8 +174,8 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
     }
   }, [props.settings.quality, rosterKey]);
   useEffect(() => {
-    engine.current?.update(props.project, props.frame, props.selected, props.settings);
-  }, [props.project, props.frame, props.selected, props.settings]);
+    engine.current?.update(props.project, props.frame, props.selected, props.settings, props.xg);
+  }, [props.project, props.frame, props.selected, props.settings, props.xg]);
   const player = props.project.roster.find((p) => p.id === props.selected)!;
   return (
     <div className="stage-shell" data-testid="stage" data-camera-player={props.selected}>
