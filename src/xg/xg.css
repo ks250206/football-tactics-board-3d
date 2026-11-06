@@ -1,0 +1,26 @@
+.xg-panel { background:#fff; border:1px solid #d7e0e8; border-radius:16px; padding:20px 24px; margin:16px 0; color:#213747; }
+.xg-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.xg-panel h2 { margin:5px 0 0; font-size:19px; font-weight:650; }
+.xg-source { color:#526779; font-size:13px; padding:7px 10px; background:#f0f5f8; border-radius:7px; }
+.xg-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:24px; margin:20px 0 16px; }
+.xg-primary,.xg-geometric,.xg-context { display:flex; flex-direction:column; gap:5px; font-size:14px; }
+.xg-primary>strong { font-variant-numeric:tabular-nums; font-size:44px; line-height:1.1; color:#1b5d9e; }
+.xg-geometric>strong { font-size:32px; font-variant-numeric:tabular-nums; }
+.xg-geometric strong small { font-size:17px; margin-left:4px; }
+.xg-panel small { font-size:13px; line-height:1.55; color:#526779; }
+.xg-context label { display:flex; align-items:center; gap:8px; font-weight:600; cursor:pointer; }
+.xg-context input { accent-color:#1f6db0; width:17px; height:17px; }
+.xg-freshness { font-size:13px; color:#526779; }
+.xg-scale { max-width:480px; font-size:12px; color:#3c566d; margin:16px 0; }
+.xg-scale>span:first-child { display:block; font-size:14px; margin-bottom:6px; font-weight:600; }
+.xg-scale-bar { grid-column:1/-1; height:9px; border-radius:5px; margin-bottom:4px; background:linear-gradient(90deg,rgb(38,69,137),rgb(20,160,163) 10%,rgb(234,193,74) 30%,rgb(240,104,66) 60%,rgb(172,39,81)); }
+.xg-scale-ticks { position:relative; height:18px; }.xg-scale-ticks span { position:absolute; transform:translateX(-50%); }.xg-scale-ticks span:first-child { transform:none; }.xg-scale-ticks span:last-child { transform:translateX(-100%); }
+.xg-lane-legend { display:flex; align-items:center; gap:15px; flex-wrap:wrap; font-size:13px; }
+.xg-lane-legend>span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; }
+.lane-clear::before { background:#2dd4bf; }.lane-defender::before { background:#fb7185; }.lane-keeper::before { background:#fbbf24; }.lane-teammate::before { background:#c4b5fd; }
+.xg-caveat { margin:14px 0 0; font-size:13px; line-height:1.7; color:#4b6274; }
+.xg-details { margin-top:12px; border-top:1px solid #e4ebef; padding-top:12px; font-size:13px; line-height:1.75; color:#4b6274; }
+.xg-details summary { cursor:pointer; font-weight:600; }.xg-details a { text-decoration:underline; color:#1b5d9e; }
+.xg-error { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:#fff2ef; color:#9e3329; padding:12px; border-radius:8px; font-size:14px; }
+@media(max-width:900px) { .xg-metrics { grid-template-columns:1fr 1fr; }.xg-context { grid-column:1/-1; } }
+@media(max-width:550px) { .xg-panel { padding:16px; }.xg-metrics { grid-template-columns:1fr; gap:16px; }.xg-panel h2 { font-size:17px; }.xg-primary>strong { font-size:38px; } }

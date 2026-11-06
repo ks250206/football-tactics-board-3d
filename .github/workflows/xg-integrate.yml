@@ -1,0 +1,45 @@
+# Temporary, feature-branch-only transport for hash-verified local source edits.
+# Removed in the integration commit. Never writes main or changes deployment.
+name: Integrate verified xG source edits
+on:
+  push:
+    branches: ['codex/issue-3-xg-heatmap-shot-lanes']
+    paths: ['.github/xg-integration.json', '.github/workflows/xg-integrate.yml']
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: github.ref == 'refs/heads/codex/issue-3-xg-heatmap-shot-lanes'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply exact source changes with before/after integrity checks
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          changes=json.loads(Path('.github/xg-integration.json').read_text())
+          allowed={'.gitignore','README.md','e2e/tactics.spec.ts','package.json','src/App.tsx','src/Board.tsx','src/Stage.tsx','src/engine.ts'}
+          assert {c['path'] for c in changes} == allowed
+          pending=[]
+          for change in changes:
+              path=Path(change['path'])
+              text=path.read_text(encoding='utf-8')
+              assert hashlib.sha256(text.encode()).hexdigest()==change['before'], f'Base changed: {path}'
+              for start,end,replacement in reversed(change['edits']):
+                  text=text[:start]+replacement+text[end:]
+              assert hashlib.sha256(text.encode()).hexdigest()==change['after'], f'Target mismatch: {path}'
+              pending.append((path,text))
+          for path,text in pending:
+              path.write_text(text,encoding='utf-8')
+              print(f'Applied and verified {path}')
+          PY
+          git diff --check
+          git rm .github/xg-integration.json .github/workflows/xg-integrate.yml
+          git add .gitignore README.md e2e/tactics.spec.ts package.json src/App.tsx src/Board.tsx src/Stage.tsx src/engine.ts
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat: integrate trained xG heatmap and 2D/3D shot lanes'
+          git push origin HEAD:refs/heads/codex/issue-3-xg-heatmap-shot-lanes
