@@ -257,10 +257,9 @@ test("protects invalid saved data until an explicit backup and resume", async ({
   const recovery = page.getByRole("alert").filter({ hasText: "自動保存を停止" });
   await expect(recovery).toBeVisible();
   await inspector(page,"チーム");
-  await page.getByLabel("フォーメーション").selectOption("4-4-2");
-  const player = page.getByTestId("player-home-2");
+  const player = page.getByTestId("player-home-6");
   const before = await player.getAttribute("transform");
-  await page.getByRole("button", { name: "配置を適用", exact: true }).click();
+  await page.getByLabel("フォーメーション").selectOption("4-4-2");
   await expect(player).not.toHaveAttribute("transform", before!);
   await page.waitForTimeout(600);
   expect(await page.evaluate(() => localStorage.getItem("touchline.project.v1"))).toBe(invalid);
