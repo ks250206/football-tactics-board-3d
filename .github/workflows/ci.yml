@@ -1,7 +1,7 @@
 name: Validate and build TOUCHLINE
 on:
   push:
-    branches: [main, 'feat/**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -28,11 +28,6 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm run build
-      - name: Install browser
-        timeout-minutes: 5
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Browser and rendering tests
-        run: pnpm run test:e2e
       - name: Source archive
         if: always()
         run: |
@@ -42,10 +37,46 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: touchline-build-and-visual-tests
+          name: touchline-build-and-source
           path: |
             dist/
             artifacts/
+          retention-days: 14
+  browser:
+    name: Browser and rendering tests (${{ matrix.shard }}/3)
+    needs: studio
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: touchline-build-and-source
+      - name: Install browser
+        timeout-minutes: 5
+        run: pnpm exec playwright install --with-deps --only-shell chromium
+      - name: Run browser shard
+        env:
+          E2E_PREBUILT: '1'
+        run: pnpm run test:e2e --shard=${{ matrix.shard }}/3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: touchline-browser-${{ matrix.shard }}
+          path: |
+            artifacts/*.png
+            artifacts/xg-browser-parity.json
             playwright-report/
             test-results/
           retention-days: 14

@@ -254,12 +254,20 @@ test("protects invalid saved data until an explicit backup and resume", async ({
       localStorage.setItem("touchline.project.v1", value);
   }, invalid);
   await page.goto("/");
-  await expect(page.getByRole("alert")).toContainText("自動保存を停止");
+  const recovery = page.getByRole("alert").filter({ hasText: "自動保存を停止" });
+  await expect(recovery).toBeVisible();
   await inspector(page,"チーム");
   await page.getByLabel("フォーメーション").selectOption("4-4-2");
+  const player = page.getByTestId("player-home-2");
+  const before = await player.getAttribute("transform");
+  await page.getByRole("button", { name: "配置を適用", exact: true }).click();
+  await expect(player).not.toHaveAttribute("transform", before!);
   await page.waitForTimeout(600);
   expect(await page.evaluate(() => localStorage.getItem("touchline.project.v1"))).toBe(invalid);
-  await page.getByRole("button", { name: "元データを退避して保存を再開", exact: true }).click();
+  await mkdir("artifacts", { recursive: true });
+  await page.screenshot({ path: "artifacts/storage-recovery.png" });
+  await recovery.getByRole("button", { name: "元データを退避して保存を再開", exact: true }).click();
+  await expect(recovery).toHaveCount(0);
   const recovered = await saved(page);
   expect(recovered.roster).toHaveLength(22);
   expect(
