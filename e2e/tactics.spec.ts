@@ -1,3 +1,4 @@
+import { inspector, popover } from './ui';
 import { test, expect, type Page } from "@playwright/test";
 import { mkdir, readFile } from "node:fs/promises";
 // Compare the live export with debounced storage; a prior 'saved' badge can still
@@ -17,6 +18,7 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
 }) => {
   await page.goto("/");
   await expect(page.getByTestId("scene-canvas")).toHaveAttribute("data-ready", "true");
+  await inspector(page,"チーム");
   await page.getByLabel("フォーメーション", { exact: true }).selectOption("3-2-5");
   await page.getByRole("button", { name: "アタッキング", exact: true }).click();
   await page.getByLabel("横の広さ", { exact: true }).fill("60");
@@ -24,6 +26,7 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
   const before = await saved(page);
   expect(before.frames[0].players["home-2"].x).toBeGreaterThan(0);
   expect(before.frames[0].players["home-2"].z).toBeCloseTo(-28);
+  await page.getByText("カスタム配置・配置の条件",{exact:true}).click();
   await page.getByLabel("カスタム配置", { exact: true }).fill("3-3-1-3");
   await page.getByLabel("配置の対象チーム", { exact: true }).selectOption("away");
   await expect(page.getByLabel("フォーメーション", { exact: true })).toHaveValue("4-3-3");
@@ -83,6 +86,7 @@ test("applies formation sliders, mirrors away and imports a saved man-marking pl
   const plan = await saved(page);
   expect(new Set(Object.values(plan.defence.marks)).size).toBe(10);
   await page.reload();
+  await inspector(page,"チーム");
   await expect(page.getByLabel("配置の対象チーム")).toHaveValue("home");
   await page.getByLabel("配置の対象チーム").selectOption("away");
   await expect(page.getByLabel("守備プリセット")).toHaveValue("man");
@@ -100,6 +104,7 @@ test("tracks a ball holder in zone defence and loads editable phase choreography
   page,
 }) => {
   await page.goto("/");
+  await inspector(page,"チーム");
   await page.getByLabel("配置の対象チーム").selectOption("away");
   await page.getByLabel("守備プリセット").selectOption("zone");
   const defender = page.getByTestId("player-away-2"),
@@ -114,8 +119,11 @@ test("tracks a ball holder in zone defence and loads editable phase choreography
   await page.mouse.up();
   await expect(defender).not.toHaveAttribute("transform", before!);
   expect((await saved(page)).defence.mode).toBe("zone");
-  await page.getByLabel("局面プリセット").selectOption("low-block");
-  await page.getByRole("button", { name: "局面シーケンスを読み込む" }).click();
+  await page.getByRole("button", { name: "シナリオ", exact: true }).click();
+  await page.getByLabel("シナリオの種類").selectOption("phase:low-block");
+  await page.getByLabel("シナリオの対象チーム").selectOption("away");
+  await page.getByLabel("シーケンス全体の置き換えを確認しました").check();
+  await page.getByRole("button", { name: "シーケンスを置き換える" }).click();
   const project = await saved(page);
   expect(project.name).toContain("ローブロック");
   expect(project.frames).toHaveLength(5);
@@ -137,9 +145,11 @@ test("renders compact keyboard focus, five lanes, Bielsa trapezoids and optional
   await expect(page.getByTestId("selection-ring")).toHaveAttribute("r", "2.5");
   expect(await token.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe("none");
   await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+  await popover(page,"レイヤー");
   await page.getByRole("button", { name: "5レーン", exact: true }).click();
   await page.getByRole("button", { name: "ビエルサゾーン", exact: true }).click();
-  await page.getByRole("button", { name: "学習済みxG", exact: true }).click();
+  await popover(page,"レイヤー",false);
+  await inspector(page,"分析");
   await expect(page.getByTestId("lane-zone")).toHaveCount(5);
   await expect(page.getByTestId("bielsa-zone")).toHaveCount(2);
   await expect(page.getByTestId("xg-readout")).toContainText("校正は未検証");
@@ -163,6 +173,7 @@ test("controls the player with simultaneous WASD and free mouse look, sensitivit
   await page.goto("/");
   await expect(page.getByTestId("scene-canvas")).toHaveAttribute("data-ready", "true");
   const before = await saved(page);
+  await popover(page,"カメラ設定");
   await page.getByRole("button", { name: "FPS操作", exact: true }).click();
   await page.getByLabel("マウス感度", { exact: true }).fill("0.4");
   await page.getByTestId("scene-canvas").click();
@@ -231,6 +242,7 @@ test("controls the player with simultaneous WASD and free mouse look, sensitivit
     bz = holder ? holder.z + Math.sin((holder.body * Math.PI) / 180) * 0.48 : f.ball.z;
   const bearing = (Math.atan2(bz - p.z, bx - p.x) * 180) / Math.PI;
   expect(Math.abs(((p.body - bearing + 540) % 360) - 180)).toBeLessThan(0.001);
+  await popover(page,"カメラ設定");
   await expect(
     page.getByRole("button", { name: "ボールを自動で見る", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");
@@ -242,11 +254,19 @@ test("protects invalid saved data until an explicit backup and resume", async ({
       localStorage.setItem("touchline.project.v1", value);
   }, invalid);
   await page.goto("/");
-  await expect(page.getByRole("alert")).toContainText("自動保存を停止");
+  const recovery = page.getByRole("alert").filter({ hasText: "自動保存を停止" });
+  await expect(recovery).toBeVisible();
+  await inspector(page,"チーム");
+  const player = page.getByTestId("player-home-6");
+  const before = await player.getAttribute("transform");
   await page.getByLabel("フォーメーション").selectOption("4-4-2");
+  await expect(player).not.toHaveAttribute("transform", before!);
   await page.waitForTimeout(600);
   expect(await page.evaluate(() => localStorage.getItem("touchline.project.v1"))).toBe(invalid);
-  await page.getByRole("button", { name: "元データを退避して保存を再開", exact: true }).click();
+  await mkdir("artifacts", { recursive: true });
+  await page.screenshot({ path: "artifacts/storage-recovery.png" });
+  await recovery.getByRole("button", { name: "元データを退避して保存を再開", exact: true }).click();
+  await expect(recovery).toHaveCount(0);
   const recovered = await saved(page);
   expect(recovered.roster).toHaveLength(22);
   expect(
@@ -263,7 +283,9 @@ test("locks the camera while editing others and authors selected/all-player gaze
 }) => {
   await page.goto("/");
   await expect(page.getByTestId("scene-canvas")).toHaveAttribute("data-ready", "true");
+  await popover(page,"カメラ設定");
   await page.getByRole("button", { name: "ボールを自動で見る", exact: true }).click();
+  await popover(page,"カメラ設定",false);
   const original = await saved(page);
   await page.getByRole("button", { name: "視点を固定", exact: true }).click();
   const token = page.getByTestId("player-away-2");

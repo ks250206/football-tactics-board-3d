@@ -2,18 +2,18 @@ import type { Response, Snapshot } from './analysis';
 import type { ShotGeometry } from './geometry';
 import './xg.css';
 interface Props {
-  snapshot: Snapshot; result: Response | null; error: string; updating: boolean; enabled: boolean;
+  snapshot: Snapshot; result: Response | null; error: string; updating: boolean;
   heatmap: boolean; geometry: ShotGeometry | null; oneOnOne: boolean;
   onOneOnOne: (value: boolean) => void; onRetry: () => void;
 }
 const labels = { near: '近距離・通常', oneOnOne: '近距離・1対1', far: '遠距離・通常' };
 export function XgPanel(p: Props) {
   const prediction = p.result?.prediction;
-  return <section className="xg-panel" data-testid="xg-readout" aria-label="xGとシュートコース解析" aria-busy={p.updating}>
+  return <section className="xg-panel" data-testid="xg-readout" data-attack-team={p.snapshot.team} aria-label="xGとシュートコース解析" aria-busy={p.updating}>
     <div className="xg-panel-heading"><div><span className="eyebrow">SHOT ANALYSIS · {p.snapshot.team.toUpperCase()}</span><h2>配置から見る、シュートの質</h2></div><span className="xg-source">adamsaidane · XGBoost</span></div>
     <div className="xg-metrics">
-      {p.enabled && <div className="xg-primary"><span>学習済みxG</span><strong data-testid="trained-xg-value">{prediction?.value != null ? prediction.value.toFixed(3) : '—'}</strong><small>{p.error ? 'モデル読込エラー' : prediction?.value != null ? `このシュートの推定得点率 ${(prediction.value*100).toFixed(1)}%` : prediction?.reason ?? 'モデルを読み込み中…'}</small></div>}
-      {p.geometry && <div className="xg-geometric"><span>幾何学的に空いているゴール面</span><strong>{Math.round(p.geometry.openFraction*100)}<small>%</small></strong><small>静止した人体の遮蔽のみ。得点率・セーブ率ではありません。</small></div>}
+      <div className="xg-primary"><span>xG · XGBoost</span><strong data-testid="xg-value">{prediction?.value != null ? prediction.value.toFixed(3) : '—'}</strong><small>{p.error ? 'モデル読込エラー' : prediction?.value != null ? `このシュートの推定得点率 ${(prediction.value*100).toFixed(1)}%` : prediction?.reason ?? 'モデルを読み込み中…'}</small></div>
+      {p.geometry && <div className="xg-geometric" data-testid="goal-open-fraction"><span>幾何学的に空いているゴール面</span><strong>{Math.round(p.geometry.openFraction*100)}<small>%</small></strong><small>静止した人体の遮蔽のみ。得点率・セーブ率ではありません。</small></div>}
       <div className="xg-context"><label><input type="checkbox" checked={p.oneOnOne} onChange={e=>p.onOneOnOne(e.target.checked)} />1対1を仮定</label><small>配置からの自動判定ではなく、局面の指定です。</small>
         {prediction?.model && <span>{labels[prediction.model]} / ゴール中心まで {prediction.distance.toFixed(1)} m / モデル開口角 {prediction.angle.toFixed(1)}°</span>}
         {prediction?.model && prediction.model !== 'far' && <span>射線内の相手 {prediction.opponentsInCone}人（GKを含む）</span>}

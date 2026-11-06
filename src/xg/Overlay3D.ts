@@ -14,12 +14,14 @@ export class XgOverlay3D {
   private ground = mesh(.26);
   private mouth = mesh(.62);
   private rays = new T.LineSegments(new T.BufferGeometry(), new T.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .55, depthWrite: false }));
+  goalColorSignature = '';
   private current: XgVisuals = EMPTY_VISUALS;
   constructor() {
     this.heat.renderOrder = -8; this.ground.renderOrder = -6; this.mouth.renderOrder = 5; this.rays.renderOrder = 6;
     this.heat.visible=this.ground.visible=this.mouth.visible=this.rays.visible=false;
     this.root.add(this.heat, this.ground, this.mouth, this.rays);
     this.root.name = 'xg-analysis-overlays';
+    this.mouth.name = 'xg-goal-mouth';
   }
   private replace(object: T.Mesh | T.LineSegments, vertices: number[], colors: number[]) {
     object.geometry.dispose();
@@ -62,6 +64,11 @@ export class XgOverlay3D {
         }
       }
       this.replace(this.ground,v,c);this.replace(this.mouth,mv,mc);this.replace(this.rays,rv,rc);
+      // Compact diagnostic of the actual GPU color attribute used by browser regressions.
+      const colors=this.mouth.geometry.getAttribute('color').array;
+      let hash=2166136261;
+      for(let i=0;i<colors.length;i++) hash=Math.imul(hash^Math.round(colors[i]*65535),16777619);
+      this.goalColorSignature=colors.length?(hash>>>0).toString(16):'';
     }
     this.current=next;
   }

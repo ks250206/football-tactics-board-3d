@@ -1,4 +1,4 @@
-import { squad, type Frame, type Project, type Team } from '../core';
+import { squad, distance, type Frame, type Project, type Team } from '../core';
 import type { Booster } from './booster';
 import { predictBooster } from './booster';
 
@@ -29,12 +29,25 @@ export interface Request { key: string; snapshot: Snapshot; heatmap: boolean }
 export interface Response extends AnalysisResult { key: string; team: Team; time: number }
 export type ModelSet = Record<ModelId, Booster>;
 
+/** Locking the camera also locks the attack direction, independent of edit selection. */
+export function analysisTeam(project: Project, frame: Frame, focused: string, locked: boolean): Team {
+  const viewer = project.roster.find(p => p.id === focused) ?? project.roster[0];
+  const owner = project.roster.find(p => p.id === frame.ball.owner);
+  return locked ? viewer.team : owner?.team ?? viewer.team;
+}
+
 /** Capture only analysis inputs: pose orientation and ball arc must not invalidate xG.
  * The resolved ball position is retained, including real movement when its owner turns. */
-export function snapshot(project: Project, frame: Frame, team: Team, selected: string, oneOnOne: boolean): Snapshot {
+export function snapshot(project: Project, frame: Frame, team: Team, focused: string, oneOnOne: boolean): Snapshot {
   const keepers = new Set([squad(project.roster, 'home').keeper?.id, squad(project.roster, 'away').keeper?.id]);
+  const owner = project.roster.find(p => p.id === frame.ball.owner);
+  const viewer = project.roster.find(p => p.id === focused && p.team === team);
+  // Never exempt the player being dragged. For a free ball, only a nearby
+  // analysis subject can be its shooter; opponents and remote teammates block.
+  const shooter = owner?.team === team ? owner.id : !owner && viewer &&
+    distance(frame.players[viewer.id], frame.ball) <= 1 ? viewer.id : null;
   return {
-    team, time: frame.t, shot: { x: frame.ball.x, z: frame.ball.z, y: frame.ball.y }, shooter: frame.ball.owner ?? selected, oneOnOne,
+    team, time: frame.t, shot: { x: frame.ball.x, z: frame.ball.z, y: frame.ball.y }, shooter, oneOnOne,
     bodies: project.roster.map(p => ({ id: p.id, x: frame.players[p.id].x, z: frame.players[p.id].z, height: p.height, keeper: keepers.has(p.id), opponent: p.team !== team })),
   };
 }

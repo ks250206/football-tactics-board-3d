@@ -110,13 +110,14 @@ export class TacticsEngine {
     this.animate();
   }
   private resize(){
+    if(!this.host.clientWidth||!this.host.clientHeight)return;
     this.needsRender=true;
     this.width=Math.max(1,this.host.clientWidth);this.height=Math.max(1,this.host.clientHeight);
     this.renderer.setSize(this.width,this.height,false);this.composer.setSize(this.width,this.height);
     const ratio=this.renderer.getPixelRatio();this.fxaa.uniforms.resolution.value.set(1/(this.width*ratio),1/(this.height*ratio));
     this.camera.aspect=this.width/this.height;this.camera.fov=verticalFov(this.settings.fov,this.camera.aspect);this.camera.updateProjectionMatrix();this.onAspect?.(this.camera.aspect);
   }
-  update(project:Project,frame:Frame,selected:string,settings:ViewSettings,xg?:XgVisuals){this.project=project;this.frame=frame;this.selected=selected;this.settings=settings;this.xgOverlay.update(xg);this.canvas.dataset.xgHeatmapCells=String(xg?.heatmap.length??0);this.canvas.dataset.xgGoalCells=String(xg?.geometry?.cells.length??0);this.needsRender=true;}
+  update(project:Project,frame:Frame,selected:string,settings:ViewSettings,xg?:XgVisuals){this.project=project;this.frame=frame;this.selected=selected;this.settings=settings;this.xgOverlay.update(xg);this.canvas.dataset.xgHeatmapCells=String(xg?.heatmap.length??0);this.canvas.dataset.xgGoalCells=String(xg?.geometry?.cells.length??0);this.canvas.dataset.xgGoalColors=this.xgOverlay.goalColorSignature;this.canvas.dataset.xgGoalX=String(xg?.geometry?.goalX??'');this.needsRender=true;}
   private apply(){
     const {project,frame,selected,settings}=this;
     const p=frame.players[selected];if(!p)return;
