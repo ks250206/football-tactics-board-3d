@@ -23,12 +23,17 @@ async function callTool(page: Page, name: string, input: object = {}) {
 }
 
 test('native WebMCP previews an editable match replay and accepts sparse custom scenes', async ({ page }) => {
+  // Start with the app's lightweight rendering preset. The software GPU
+  // reinitializes on replay roster changes, which can stall pointer dispatch.
+  await page.setViewportSize({ width: 680, height: 1050 });
   await page.goto('/');
+  const title = page.getByLabel('シーケンス名');
+  await expect(title).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 1050 });
   await expect.poll(() => page.evaluate(async () => {
     const tools = await document.modelContext?.getTools();
     return tools?.map(tool => tool.name).sort();
   })).toEqual(toolNames);
-  const title = page.getByLabel('シーケンス名');
   const original = await title.inputValue();
   const catalog = await callTool(page, 'touchline_list_replays');
   const replayId = 'pl-2025-26-west-ham-arsenal-trossard-83';
