@@ -38,7 +38,13 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
   const catalog = await callTool(page, 'touchline_list_replays');
   const replayId = 'pl-2025-26-west-ham-arsenal-trossard-83';
   expect(catalog.replays[0]).toMatchObject({ id: replayId, match: expect.stringContaining('2026-05-10') });
-  expect(catalog.replays).toHaveLength(7);
+  expect(catalog.replays).toHaveLength(10);
+  expect(catalog.replays.filter((entry: { id: string }) => entry.id.startsWith('wc-2026-'))
+    .map((entry: { id: string }) => entry.id)).toEqual([
+    'wc-2026-argentina-cabo-verde-lopes-cabral-103',
+    'wc-2026-norway-england-bellingham-93',
+    'wc-2026-spain-argentina-ferran-torres-106',
+  ]);
 
   const invalid = await callTool(page, 'touchline_preview_sequence', {
     name: 'Invalid', duration: 2, keyframes: [
@@ -97,7 +103,7 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
 
   await page.getByRole('button', { name: 'シナリオ', exact: true }).click();
   const select = dialog.getByLabel('シナリオの種類');
-  await expect(select.locator('optgroup[label="試合の再現"] option')).toHaveCount(7);
+  await expect(select.locator('optgroup[label="試合の再現"] option')).toHaveCount(10);
   await select.selectOption('replay:' + wilshere.id);
   await confirm.check();
   await apply.click();

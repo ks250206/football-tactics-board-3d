@@ -98,6 +98,8 @@
 .studio-shell .orientation-grid { grid-template-columns:1fr; gap:6px; }
 .studio-shell .orientation-grid .button { font-size:12px; min-height:34px; align-items:center; }
 .studio-shell .bulk-gaze summary { font-size:12px; }
+.studio-shell .orientation-teams { display:flex; margin:10px 0 0; }
+.studio-shell .orientation-teams button { flex:1; }
 .studio-shell .inspector-foot { display:flex; flex-direction:column; align-items:stretch; gap:12px; margin-top:18px; padding-top:12px; }
 .studio-shell .inspector-foot>span { font-size:11px; }
 .studio-shell .inspector-foot .button { font-size:12px; }

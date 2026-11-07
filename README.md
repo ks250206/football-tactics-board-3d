@@ -84,6 +84,9 @@ pnpm run preview
 | [10/11 レアル・マドリード対バルセロナ · メッシ](https://www.uefa.com/uefachampionsleague/news/01f0-0e7810b91a10-94576e9fc2aa-1000--ten-man-madrid-undone-by-messi-magic/) | 中盤で保持し、ブスケツから受けたメッシが複数の守備者をかわして得点 | 12秒 |
 | [14/15 バルセロナ対バイエルン · メッシ](https://www.uefa.com/uefachampionsleague/news/0221-0e909116af7b-fe3ef95b6374-1000--messi-double-puts-barca-in-control-against-bayern/) | 中盤からラキティッチがメッシへ。ボアテングの逆を取り、ノイアーを越すチップ | 11秒 |
 | [25/26 ウェストハム対アーセナル · トロサール](https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race) | 右サイドでのボール回しから、ライスとのワンツーでウーデゴールが侵入し、トロサールに折り返す | 11.5秒 |
+| [2026 W杯 ラウンド32 · ロペス・カブラル](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/sidny-lopes-cabral-cabo-verde-round-of-32-best-goal) | カーボベルデが左へ展開し、カブラルが切り込んでファー上隅に巻く | 11.5秒 |
+| [2026 W杯 準々決勝 · ベリンガム](https://www.englandfootball.com/england/mens-senior-team/fixtures-results/2025-26/World-Cup/norway-england-fifa-world-cup-quarter-final-saturday-11-july-2026-match-centre) | ロジャーズのミドルをGKがこぼし、ベリンガムが延長93分の決勝点を決める | 10秒 |
+| [2026 W杯 決勝 · フェラン・トーレス](https://rfef.es/es/noticias/espana-vuelve-a-dominar-el-mundo) | ヤマルからポロにつなぎ、ファーへのクロスをニコが頭で折り返してフェランがダイレクトで決める | 10.5秒 |
 
 選手の位置、経過秒数、ボール軌道と、記録で特定できない前段のつなぎは推定です。共通の選手モデルを使い、退場者に対応する編集用の枠はプレーから離れた位置に置いています。ボアテングの反応は位置と体の向きで表現しています。ウィルシャーとロナウドの前段は、当時の報道と選手本人の回想も参考にしています。[ウィルシャーの回想](https://www.fourfourtwo.com/features/theres-only-two-clubs-that-id-feel-completely-comfortable-walking-in-and-saying-hello-to-everyone-exclusive-jack-wilshere-speaks-to-henry-winter-about-marathons-mistakes-and-managers-hes-worked-with) · [マドリードの速攻のパス順](https://as.com/futbol/2011/09/27/mas_futbol/1317074466_850215.html)
 
@@ -202,7 +205,7 @@ Three.jsとTailwindは通常のパッケージ依存です。Vite+は`vite-plus`
 
 3D画面上の「視点を固定」で、現在の視点の選手を固定します。2Dボードや「編集する選手」で別の選手を選んでドラッグ・向き編集しても、3D視点は固定した選手のままです。ボードの破線リングが視点の選手、白いリングが編集対象を表します。「この選手を視点にする」で編集対象へ視点を切り替え、「視点を固定」を解除すると通常の選択追従に戻ります。3D画面内の首振り・FPS操作・VISION CHECKは視点の選手を対象にします。
 
-選手の向きパネルから、選択選手の「ボールを見る」「体も顔もボールへ」「相手ゴールを見る」「体も顔も相手ゴールを見る」を実行できます。「全員の向き（22人）」を開くと、同じ4操作を両チーム全員へ適用できます。相手ゴールは各チームの攻撃先のゴール中央（高さ1.22 m）です。視線だけの操作でも首の可動域±110°を超える分は体が回ります。体も顔も向ける操作では首の相対角を0°にします。現在時刻のキーに向きを記録し、Undoで戻せます。自動視線を解除し、自動守備側の選手を含む操作では守備位置を焼き込んで手動編集に切り替えます。
+選手の向きパネルから、選択選手の「ボールを見る」「体も顔もボールへ」「相手ゴールを見る」「体も顔も相手ゴールを見る」を実行できます。「全員の向き（22人）」を開くと、HOME・AWAY を個別に切り替えられます。初期状態は両チームがオンで、片方だけオンにするとそのチームの11人に同じ4操作を適用できます。両方オフのときは一括操作が無効になります。相手ゴールは各チームの攻撃先のゴール中央（高さ1.22 m）です。視線だけの操作でも首の可動域±110°を超える分は体が回ります。体も顔も向ける操作では首の相対角を0°にします。現在時刻のキーに向きを記録し、Undoで戻せます。自動視線を解除し、自動守備側の選手を含む操作では守備位置を焼き込んで手動編集に切り替えます。
 
 
 初期状態では全選手の視線がボールへ向きます。首の相対角±110°を超える場合は体も回します。保持者は自分の足元を見下ろさず、体の前を見ます。これは表示上の自動視線で、元のキーの体・首・上下視線は変更しません。「ボールを見る」は選択選手の現在キーへ向きを記録します。「体も顔もボールへ」は体をボールの方角へそろえ、首の相対角を0°にして、体と顔を同じ方角へ向けます。上下視線も球へ合わせます（±45°まで）。手動の体・首・視線編集は自動視線を解除します。JSON保存対象はキーに記録した視線であり、表示用トグルは含みません。

@@ -49,7 +49,13 @@ describe('WebMCP sequence authoring', () => {
 });
 
 describe('historical match replays', () => {
-  it.each(matchReplays.slice(1).map((entry, i) => [entry.info.id, entry, [10, 8, 20, 7, 10, 10][i]] as const))(
+  const shirts = [10, 8, 20, 7, 10, 10, 13, 10, 7];
+  const contactTimes: Partial<Record<string, number>> = {
+    'wc-2026-argentina-cabo-verde-lopes-cabral-103': 8.55,
+    'wc-2026-norway-england-bellingham-93': 7.28,
+    'wc-2026-spain-argentina-ferran-torres-106': 7.56,
+  };
+  it.each(matchReplays.slice(1).map((entry, i) => [entry.info.id, entry, shirts[i]] as const))(
     '%s keeps the scorer selectable and the shot inside the goal mouth',
     (_id, replay, shirt) => {
       const project = replay.create();
@@ -58,13 +64,15 @@ describe('historical match replays', () => {
       expect(scorer.number).toBe(shirt);
       const direction = scorer.team === 'home' ? 1 : -1;
       const goalIndex = project.frames.findIndex(frame => direction * frame.ball.x > 52.5);
-      const release = project.frames[goalIndex - 1];
+      const beforeGoal = project.frames[goalIndex - 1];
       const goal = project.frames[goalIndex];
-      expect(release.t).toBeGreaterThan(8);
-      const ball = ballPosition(release);
-      expect(Math.hypot(ball.x - release.players[scorer.id].x, ball.z - release.players[scorer.id].z)).toBeLessThan(.6);
-      const fraction = (52.5 - direction * ball.x) / (direction * (goal.ball.x - ball.x));
-      const crossing = sample(project, release.t + fraction * (goal.t - release.t)).ball;
+      const contact = sample(project, contactTimes[replay.info.id] ?? beforeGoal.t);
+      expect(contact.t).toBeGreaterThan(7);
+      const player = contact.players[scorer.id];
+      expect(Math.hypot(contact.ball.x - player.x, contact.ball.z - player.z)).toBeLessThan(.6);
+      const start = ballPosition(beforeGoal);
+      const fraction = (52.5 - direction * start.x) / (direction * (goal.ball.x - start.x));
+      const crossing = sample(project, beforeGoal.t + fraction * (goal.t - beforeGoal.t)).ball;
       expect(Math.abs(crossing.z)).toBeLessThan(3.66);
       expect(crossing.y).toBeLessThan(2.44);
     },

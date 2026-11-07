@@ -1,6 +1,8 @@
 import { useT } from "./i18n";
 import { Icon } from "./Icon";
+import type { Team } from "./core";
 import type { LookAlignment, LookTarget } from "./tactics";
+const teams = ["home", "away"] as const;
 const actions = [
   ["ball", "gaze", "ボールを見る", "全員ボールを見る"],
   ["ball", "body", "体も顔もボールへ", "全員体も顔もボールを見る"],
@@ -10,11 +12,16 @@ const actions = [
 export function OrientationControls({
   onOrient,
   onReset,
+  activeTeams,
+  onToggleTeam,
 }: {
-  onOrient: (target: LookTarget, alignment: LookAlignment, scope: "selected" | "all") => void;
+  onOrient: (target: LookTarget, alignment: LookAlignment, scope: "selected" | readonly Team[]) => void;
   onReset: () => void;
+  activeTeams: readonly Team[];
+  onToggleTeam: (team: Team) => void;
 }) {
   const t = useT();
+  const both = activeTeams.length === teams.length;
   return (
     <div className="orientation-controls">
       <div className="orientation-heading">
@@ -36,16 +43,30 @@ export function OrientationControls({
         ))}
       </div>
       <details className="bulk-gaze">
-        <summary>{t("全員の向き（22人）")}</summary>
-        <div className="orientation-grid">
-          {actions.map(([target, alignment, , label]) => (
+        <summary>{both ? t("全員の向き（22人）") : t("チームの向き（{0}人）", activeTeams.length * 11)}</summary>
+        <div className="segmented orientation-teams" role="group" aria-label={t("向きを変更するチーム")}>
+          {teams.map(team => (
+            <button
+              key={team}
+              type="button"
+              className={activeTeams.includes(team) ? "selected" : ""}
+              aria-pressed={activeTeams.includes(team)}
+              onClick={() => onToggleTeam(team)}
+            >
+              {team.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="orientation-grid" role="group" aria-label={t("チームの向きの操作")}>
+          {actions.map(([target, alignment, label, allLabel]) => (
             <button
               key={`${target}-${alignment}`}
               className="button secondary small"
-              onClick={() => onOrient(target, alignment, "all")}
+              disabled={activeTeams.length === 0}
+              onClick={() => onOrient(target, alignment, activeTeams)}
             >
               <Icon name="target" size={15} />
-              <span>{t(label)}</span>
+              <span>{t(both ? allLabel : label)}</span>
             </button>
           ))}
         </div>
