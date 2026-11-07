@@ -209,6 +209,9 @@ importers:
       vite-plus:
         specifier: 1.5.0
         version: 1.5.0(@types/node@24.7.2)(@vitest/ui@5.1.0)(jiti@2.7.0)(playwright@1.64.1)(typescript@5.9.3)
+      webmcp-types:
+        specifier: 0.1.10
+        version: 0.1.10
 
 packages:
 
@@ -1367,6 +1370,9 @@ packages:
       jsdom:
         optional: true
 
+  webmcp-types@0.1.10:
+    resolution: {integrity: sha512-U4GQ1RpJ0tqCUt2ALMV9Pnhi+hsy8L31f/Q1v4mLVhW64r5sYhh+2+SjP/Lq4/9jP33vZgNkuRZARJl65A/ZIg==}
+
   why-is-node-running@3.2.1:
     resolution: {integrity: sha512-Tb2FUhB4vUsGQlfSquQLYkApkuPAFQXGFzxWKHHumVz2dK+X1RUm/HnID4+TfIGYJ1kTcwOaCk/buYCEJr6YjQ==}
     engines: {node: '>=20.11'}
@@ -2251,6 +2257,8 @@ snapshots:
       '@vitest/ui': 5.1.0(vitest@5.1.0)
     transitivePeerDependencies:
       - msw
+
+  webmcp-types@0.1.10: {}
 
   why-is-node-running@3.2.1: {}
 

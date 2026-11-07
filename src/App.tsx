@@ -10,6 +10,7 @@ import { TacticsPanel } from './TacticsPanel';
 import { Workspace, type InspectorTab } from './studio/Workspace';
 import { Popover } from './studio/Popover';
 import { ScenarioDialog } from './studio/ScenarioDialog';
+import { useScenarioTools, type ScenarioPreview } from './webmcp/useScenarioTools';
 import './studio/workspace.css';
 import { analysisTeam, snapshot as xgSnapshot } from './xg/analysis';
 import { shotGeometry } from './xg/geometry';
@@ -44,9 +45,11 @@ export default function App(){
   const [revision,setRevision]=useState(0);
   const [inspectorTab,setInspectorTab]=useState<InspectorTab>('selection');
   const [inspectorOpen,setInspectorOpen]=useState(()=>window.innerWidth>=1200);
-  const [scenarioOpen,setScenarioOpen]=useState(false);
+  const [scenarioOpen, setScenarioOpen] = useState<boolean | ScenarioPreview>(false);
+  const scenarioPending = useRef(false);
   const showAnalysis=()=>{setInspectorTab('analysis');setInspectorOpen(true);};
-  const openScenario=()=>{setPlaying(false);setScenarioOpen(true);};
+  const openScenario = () => { scenarioPending.current = true; setPlaying(false); setScenarioOpen(true); };
+  const closeScenario = () => { scenarioPending.current = false; setScenarioOpen(false); };
   const [xgHeatmap,setXgHeatmap]=useState(false),[shotLanes,setShotLanes]=useState(false),[oneOnOne,setOneOnOne]=useState(false);
   const history=useRef<{past:Project[];future:Project[];tag:string;at:number}>({past:[],future:[],tag:'',at:0});
   const stage=useRef<StageHandle>(null),fileInput=useRef<HTMLInputElement>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null);
@@ -155,12 +158,25 @@ export default function App(){
   const heading=wrap(pose.body+pose.head);
   void revision;
 
-  const applyScenario=(next:Project)=>{
+  const applyScenario=(next:Project, focus?:string)=>{
     if(recording){setToast('録画を停止してからシナリオを変更してください。');return;}
     setPlaying(false);setPassMode(false);commit(next);seek(0);setLockedPlayer(null);
-    setSelected(next.roster.some(p=>p.id==='home-6')?'home-6':next.roster[0].id);
+    setSelected(focus ?? (next.roster.some(p=>p.id==='home-6')?'home-6':next.roster[0].id));
+    if(focus)setSettings(s=>({...s,camera:'orbit',fps:false}));
     setBallActive(false);setOneOnOne(false);setToast('シナリオを読み込みました。元に戻す操作で復元できます。');
   };
+  const openToolPreview = useCallback((preview: ScenarioPreview) => {
+    if (recorder.current?.state === 'recording') throw new Error('Stop the recording before opening a scenario.');
+    if (scenarioPending.current || document.querySelector('.help-modal')) {
+      throw new Error('Close the open dialog before previewing another scenario.');
+    }
+    scenarioPending.current = true;
+    if (document.pointerLockElement) document.exitPointerLock();
+    setPlaying(false);
+    setScenarioOpen(preview);
+  }, []);
+  useScenarioTools(openToolPreview);
+
   return <div className="app-shell studio-shell">
     <header className="app-header">
       <a className="brand" href="./" aria-label="TOUCHLINE ホーム"><span className="brand-mark"><Icon name="pitch" size={22}/></span><span><strong>TOUCHLINE<span className="brand-dot">.</span></strong><small>PLAYER PERSPECTIVE LAB</small></span></a>
@@ -203,7 +219,7 @@ export default function App(){
         timeline={<Timeline project={project} time={time} playing={playing} speed={speed} loop={loop} onTime={seek} onPlay={play} onSpeed={setSpeed} onLoop={()=>setLoop(v=>!v)} onKey={addKey} onDelete={()=>commit(removeKeyframe(project,time))} onExtend={extend}/>}
       />
     </main>
-    {scenarioOpen&&<ScenarioDialog project={project} disabled={recording} onApply={applyScenario} onClose={()=>setScenarioOpen(false)}/>}
+    {scenarioOpen&&<ScenarioDialog project={project} incoming={scenarioOpen === true ? undefined : scenarioOpen} disabled={recording} onApply={applyScenario} onClose={closeScenario}/>}
     {toast&&<div className="toast" role="status"><Icon name="check" size={17}/>{toast}<button aria-label="通知を閉じる" onClick={()=>setToast('')}><Icon name="close" size={15}/></button></div>}
     {help&&<div className="modal-backdrop" onClick={()=>setHelp(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-label="使い方" onClick={e=>e.stopPropagation()}><div className="panel-header"><h2>ピッチを、選手の目で。</h2><ToolButton label="使い方を閉じる" icon="close" onClick={()=>setHelp(false)}/></div><div className="help-content"><p>ボードで選手を選ぶと3Dがその目線に切り替わります。視点を固定すると、別の選手を編集してもカメラと解析方向を維持します。選手・チーム・分析の操作はInspectorに集約しています。配置と視線は、下の時間軸と常に同期します。</p><HelpStep n="01" title="動きをつくる">時間軸をクリックして時刻を選び、選手やボールをドラッグ。編集時刻にキーフレームが自動で追加されます。位置はキー間を直線で補間します。</HelpStep><HelpStep n="02" title="体と首を、別々に動かす">「体の向き」と「首の向き」は独立しています。ボールへの自動視線は初期状態で有効です。手動編集すると解除されます。一人称画面のドラッグでも首振りを編集できます。FPS操作を有効にして画面をクリックするとWASDで移動、マウスで旋回します。Escで解除。首は±110°まで。水平視野角は画面の縦横比に合わせて3Dに反映されます。</HelpStep><HelpStep n="03" title="パスを通す">出し手を選択し「パスを作る」→受け手をクリック。1.2秒後までのパスを作成します。ボールを選択すると保持者・高さ・次区間の浮き高さを変更できます。</HelpStep><HelpStep n="04" title="保存する / 見返す">編集はこのブラウザに自動保存されます。端末間で移すときはJSONを書き出してください。カメラボタンでPNG、録画ボタンで3Dのみの動画を保存できます。録画は実時間で、描画性能に依存します。</HelpStep><div className="help-note">これは戦術の幾何学的なプレビューです。実際の視覚・選手の注意・身体運動・ボールの力学を完全に再現するものではありません。選手はオリジナルのプロシージャルモデルです。</div><button className="button primary" autoFocus onClick={()=>setHelp(false)}>ピッチに戻る <Icon name="arrow" size={16}/></button></div></section></div>}
   </div>;
