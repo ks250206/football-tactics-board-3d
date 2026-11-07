@@ -120,6 +120,42 @@ for (const team of ['home', 'away'] as const) test(`free-ball ${team}: locked at
   await expect(page.getByTestId('analysis-anchor')).toHaveAttribute('data-attack-team', other);
 });
 
+test('away passes keep both overlays pointed at the home goal until an interception', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const project = fixture('away');
+  const first = project.frames[0];
+  first.players['away-7'] = { x: -36, z: 7, body: 180, head: 0, pitch: 0 };
+  project.frames = [
+    first,
+    { ...first, t: 2, ball: { ...first.ball, x: -38, z: 3, owner: null } },
+    { ...first, t: 4, ball: { ...first.ball, owner: 'away-7' } },
+    { ...first, t: project.duration, ball: { ...first.ball, owner: 'home-6' } },
+  ];
+  await page.addInitScript(p => localStorage.setItem('touchline.project.v1', JSON.stringify(p)), project);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'xGヒートマップ', exact: true }).click();
+  await page.getByRole('button', { name: 'シュートコース', exact: true }).click();
+  const canvas = page.getByTestId('scene-canvas');
+  const anchor = page.getByTestId('analysis-anchor');
+  const flight = page.getByRole('button', { name: 'ボール キーフレーム 2.0秒', exact: true });
+  await flight.press('Enter');
+  await expect(page.getByTestId('timecode')).toContainText('2.00');
+  await expect(page.getByTestId('stage')).toHaveAttribute('data-camera-player', 'home-6');
+  await expect(anchor).toHaveAttribute('data-attack-team', 'away');
+  await expect(canvas).toHaveAttribute('data-xg-goal-x', '-52.5');
+  const firstCell = page.getByTestId('xg-heatmap').locator('rect').first();
+  await expect(firstCell).toHaveAttribute('x', /^-/);
+  await mkdir('artifacts', { recursive: true });
+  await page.screenshot({ path: 'artifacts/xg-away-pass.png' });
+
+  await page.getByRole('button', { name: '最後に進む', exact: true }).click();
+  await expect(anchor).toHaveAttribute('data-attack-team', 'home');
+  await expect(canvas).toHaveAttribute('data-xg-goal-x', '52.5');
+  await flight.press('Enter');
+  await expect(anchor).toHaveAttribute('data-attack-team', 'away');
+  await expect(canvas).toHaveAttribute('data-xg-goal-x', '-52.5');
+});
+
 test('mobile analysis, explicit 1v1 and timeline edits remain accessible', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await load(page);
   await page.getByRole('button', { name: 'Inspectorを閉じる', exact: true }).click();
