@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 const paths:Record<string,string>={
+  github:'M9 19c-4.3 1.4-4.3-2.5-6-3m12 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.1-1.5 6.1-6.7A5.3 5.3 0 0 0 18.8 5a5 5 0 0 0-.1-3.8s-1.1-.3-3.7 1.5a13 13 0 0 0-7 0C5.4.9 4.3 1.2 4.3 1.2A5 5 0 0 0 4.2 5a5.3 5.3 0 0 0-1.4 3.7c0 5.2 3.1 6.4 6.1 6.7A3.4 3.4 0 0 0 8 18v4',
   play:'m9 5 11 7-11 7Z', pause:'M8 5v14M16 5v14', back:'M5 5v14M19 5 7 12l12 7Z', forward:'M19 5v14M5 5l12 7-12 7Z',
   undo:'M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12',redo:'m15 5 5 5-5 5M20 10h-9a6 6 0 0 0 0 12',
   download:'M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4',upload:'M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4',

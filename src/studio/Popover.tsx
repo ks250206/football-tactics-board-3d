@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Icon } from '../Icon';
 
@@ -5,6 +6,7 @@ import { Icon } from '../Icon';
 export function Popover({ label, icon, children, align = 'right' }: {
   label: string; icon: string; children: ReactNode; align?: 'left' | 'right';
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState<CSSProperties>({});
@@ -41,7 +43,7 @@ export function Popover({ label, icon, children, align = 'right' }: {
     </button>
     {open && <section className="studio-popover-content" aria-label={label} style={position}>
       <div className="popover-title"><strong>{label}</strong><button className="icon-button"
-        aria-label={`${label}を閉じる`} onClick={() => { setOpen(false); trigger.current?.focus(); }}><Icon name="close" size={16}/></button></div>
+        aria-label={t("{0}を閉じる", label)} onClick={() => { setOpen(false); trigger.current?.focus(); }}><Icon name="close" size={16}/></button></div>
       {children}
     </section>}
   </div>;

@@ -126,8 +126,9 @@ test("tracks a ball holder in zone defence and loads editable phase choreography
   await page.getByRole("button", { name: "シーケンスを置き換える" }).click();
   const project = await saved(page);
   expect(project.name).toContain("ローブロック");
-  expect(project.frames).toHaveLength(5);
-  expect(project.defence.team).toBe("away");
+  expect(project.frames.length).toBeGreaterThan(5);
+  expect(project.frames[0].ball.owner).toMatch(/^home-/);
+  expect(project.frames.at(-1).t).toBe(12);
   await page.getByTestId("play-button").click();
   await expect.poll(() => page.getByTestId("timecode").innerText()).not.toContain("0.00");
   await page.getByTestId("play-button").click();

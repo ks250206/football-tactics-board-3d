@@ -1,3 +1,4 @@
+import { useT } from "./i18n";
 import { useMemo, useRef } from 'react';
 import { XgBoardOverlay } from './xg/BoardOverlay';
 import type { XgVisuals } from './xg/visuals';
@@ -5,6 +6,7 @@ import { BIELSA_ZONES, LANE_ZONES, resolveDefence } from './tactics';
 import { clamp, RAD, type Frame, type Project, type Sight, type ViewSettings } from './core';
 interface Props { xg?:XgVisuals;project:Project;frame:Frame;selected:string;focused:string;ballActive:boolean;settings:ViewSettings;sights:Sight[];passMode:boolean;onPick:(id:string)=>void;onMove:(id:string,x:number,z:number)=>void;onPause:()=>void }
 export function Board({xg,project,frame,selected,focused,ballActive,settings,sights,passMode,onPick,onMove,onPause}:Props){
+  const t = useT();
   const svg=useRef<SVGSVGElement>(null),drag=useRef<{id:string;dx:number;dz:number}|null>(null);
   const traces=useMemo(()=>project.frames.map(f=>resolveDefence(project,f)),[project]);
   const p=frame.players[focused],yaw=(p.body+p.head)*RAD;
@@ -14,12 +16,12 @@ export function Board({xg,project,frame,selected,focused,ballActive,settings,sig
     const point=coords(event.clientX,event.clientY);drag.current={id,dx:x-point.x,dz:z-point.y};event.currentTarget.setPointerCapture(event.pointerId);
   };
   const coneLeft=yaw-settings.fov*RAD/2,coneRight=yaw+settings.fov*RAD/2;
-  return <div className={`board-container ${passMode?'pass-targeting':''}`}><svg ref={svg} viewBox="-58 -40 116 80" role="img" aria-label="2D戦術ボード。選手とボールをドラッグして移動" data-testid="tactics-board" onPointerMove={event=>{const active=drag.current;if(!active)return;const point=coords(event.clientX,event.clientY);onMove(active.id,clamp(point.x+active.dx,-52.5,52.5),clamp(point.y+active.dz,-34,34));}} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}>
+  return <div className={`board-container ${passMode?'pass-targeting':''}`}><svg ref={svg} viewBox="-58 -40 116 80" role="img" aria-label={t("2D戦術ボード。選手とボールをドラッグして移動")} data-testid="tactics-board" onPointerMove={event=>{const active=drag.current;if(!active)return;const point=coords(event.clientX,event.clientY);onMove(active.id,clamp(point.x+active.dx,-52.5,52.5),clamp(point.y+active.dz,-34,34));}} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}>
     <defs><pattern id="grass-stripes" width="15" height="80" patternUnits="userSpaceOnUse"><rect width="7.5" height="80" fill="#234734"/><rect x="7.5" width="7.5" height="80" fill="#294e39"/></pattern><clipPath id="field-clip"><rect x="-52.5" y="-34" width="105" height="68"/></clipPath><radialGradient id="vision-cone"><stop stopColor="#a9cfff" stopOpacity=".22"/><stop offset="1" stopColor="#a9cfff" stopOpacity=".015"/></radialGradient><marker id="lane-arrow" markerWidth="5" markerHeight="5" refX="3" refY="2.5" orient="auto"><path d="m0 0 4 2.5L0 5" fill="none" stroke="#c8dbff" strokeWidth=".8"/></marker></defs>
     <rect x="-53.2" y="-34.7" width="106.4" height="69.4" rx=".8" fill="#477157"/>
     <rect x="-52.5" y="-34" width="105" height="68" fill="url(#grass-stripes)"/>
     <g pointerEvents="none" clipPath="url(#field-clip)" data-testid="pitch-overlays">
-      {settings.lanes&&LANE_ZONES.map((zone,i)=><g key={i} data-testid="lane-zone"><rect x={zone.x} y={zone.z} width={zone.length} height={zone.width} fill={zone.color} opacity=".62"/><path d={`M-52.5,${zone.z}H52.5`} stroke="#edf3fb" strokeOpacity=".8" strokeWidth=".22" strokeDasharray="1.2 .8"/><rect x="-51" y={zone.z+1} width={zone.label.length*1.6+2} height="3.2" rx=".5" fill="#132737" fillOpacity=".85"/><text x="-50" y={zone.z+3.2} fill="#ffffff" fontSize="1.6" fontWeight="600">{zone.label}</text></g>)}
+      {settings.lanes&&LANE_ZONES.map((zone,i)=><g key={i} data-testid="lane-zone"><rect x={zone.x} y={zone.z} width={zone.length} height={zone.width} fill={zone.color} opacity=".62"/><path d={`M-52.5,${zone.z}H52.5`} stroke="#edf3fb" strokeOpacity=".8" strokeWidth=".22" strokeDasharray="1.2 .8"/><rect x="-51" y={zone.z+1} width={t(zone.label).length*(/^[\x00-\x7f]+$/.test(t(zone.label))?.9:1.6)+2} height="3.2" rx=".5" fill="#132737" fillOpacity=".85"/><text x="-50" y={zone.z+3.2} fill="#ffffff" fontSize="1.6" fontWeight="600">{t(zone.label)}</text></g>)}
       {settings.bielsa&&BIELSA_ZONES.map((zone,i)=><polygon key={i} data-testid="bielsa-zone" points={zone.points.map(p=>p.join(',')).join(' ')} fill={zone.color} fillOpacity=".38" stroke={zone.color} strokeWidth=".55"/>)}
     </g>
     <XgBoardOverlay visuals={xg}/>
@@ -39,7 +41,7 @@ export function Board({xg,project,frame,selected,focused,ballActive,settings,sig
       <text textAnchor="middle" dominantBaseline="central" fontFamily="system-ui" fontSize="1.9" fontWeight="700" fill={home?'#26313f':'#ffffff'} style={{pointerEvents:'none'}}>{player.number}</text>
       {active&&<path d={`M${Math.cos(tokenYaw)*2.2},${Math.sin(tokenYaw)*2.2}L${Math.cos(tokenYaw)*5.8},${Math.sin(tokenYaw)*5.8}`} stroke="#cbe0ff" strokeWidth=".5" strokeLinecap="round"/>}
     </g>;})}
-    <g transform={`translate(${frame.ball.x} ${frame.ball.z})`} className="ball-token" data-testid="ball-token" role="button" tabIndex={0} aria-label="ボール" onKeyDown={e=>{if(e.key==='Enter'){onPick('ball');}}} onPointerDown={e=>start(e,'ball',frame.ball.x,frame.ball.z)}><circle className="token-hit" r="1.7" fill="transparent"/><circle className="token-focus" r="1.8" fill="none" stroke="#99caff" strokeWidth=".25"/>{ballActive&&<circle r="2.4" fill="none" stroke="#8fc9ff" strokeWidth=".35"/>}<circle r="1.1" fill="#ffffff" stroke="#1b2b23" strokeWidth=".32"/><path d="m0-.55.53.38-.2.61h-.66l-.2-.61Z" fill="#26313f"/></g>
+    <g transform={`translate(${frame.ball.x} ${frame.ball.z})`} className="ball-token" data-testid="ball-token" role="button" tabIndex={0} aria-label={t("ボール")} onKeyDown={e=>{if(e.key==='Enter'){onPick('ball');}}} onPointerDown={e=>start(e,'ball',frame.ball.x,frame.ball.z)}><circle className="token-hit" r="1.7" fill="transparent"/><circle className="token-focus" r="1.8" fill="none" stroke="#99caff" strokeWidth=".25"/>{ballActive&&<circle r="2.4" fill="none" stroke="#8fc9ff" strokeWidth=".35"/>}<circle r="1.1" fill="#ffffff" stroke="#1b2b23" strokeWidth=".32"/><path d="m0-.55.53.38-.2.61h-.66l-.2-.61Z" fill="#26313f"/></g>
     <text x="-52" y="38" fill="#4d5966" fontSize="1.7" letterSpacing=".3">HOME →</text><text x="52" y="38" textAnchor="end" fill="#4d5966" fontSize="1.7" letterSpacing=".2">105 × 68 m</text>
-  </svg>{passMode&&<div className="pass-instruction">パスの受け手をクリック <span>Escで解除</span></div>}</div>;
+  </svg>{passMode&&<div className="pass-instruction">{t("パスの受け手をクリック")} <span>{t("Escで解除")}</span></div>}</div>;
 }

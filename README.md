@@ -45,10 +45,11 @@ pnpm run preview
 - 選択選手から受け手をクリックして1.2秒のパスを作成。保持者、自由なボール位置、高さ、浮き高さの調整。
 - 水平視野角55–120°、目線1.40–2.05 m、歩行時の微小な揺れのON / OFF。
 - 現在の視野に入る味方、他の選手による遮蔽、直線パスコース上の相手を**別々に判定**。
-- ビルドアップ / スルーパス / オーバーラップの編集可能なデモ。
+- ビルドアップ / スルーパス / オーバーラップのデモと、攻守の12局面を編集できるシナリオ。
 - WebMCP対応のブラウザAIから、試合の再現やオリジナルの戦術シーンをプレビュー。
 - ブラウザへの自動保存、JSON入出力、3DのPNG保存、対応ブラウザでのWebM / MP4録画。
 - デスクトップとモバイルのレスポンシブレイアウト。モバイルは軽量モードで開始。
+- 日本語、英語、中国語（簡体字）、韓国語、スペイン語、ポルトガル語（ブラジル）。右上の言語設定をブラウザに保存します。
 
 ## 最初の操作
 
@@ -59,6 +60,12 @@ pnpm run preview
 5. 再生して、受け手がどの角度・距離に見えるかを確認する。
 
 ボール自体をクリックすると、保持者・高さ・次区間の浮き高さを編集できます。自由カメラは左ドラッグで回転、右ドラッグで平行移動、ホイールでズームします。
+
+## 試合の局面を再生する
+
+「シナリオ」から試合の局面と対象チームを選び、開始配置をプレビューできます。ビルドアップではGKと後方3枚でプレスを引きつけ、中盤では縦パスを受けた選手が3人目へつなぎます。サイドの数的優位、逆サイドへの展開、カットバック、ハイプレス、ミドル／ローブロック、守備への切り替えも収録しています。
+
+選手の位置とパスのタイミングは、戦術を説明するために設定したキーフレームです。位置はキー間を直線補間し、パスを出すまでは保持者にボールが付きます。選手間の衝突やプレー判断はシミュレーションしていません。配置と動きの参考にした資料は、FIFA Training Centreの解説です。[後方3枚と内側のレーン](https://www.fifatrainingcentre.com/en/fifa-world-cup-2026/building-up-in-a-back-three-and-exploiting-inside-channels.php) · [3人目を使った前進](https://www.fifatrainingcentre.com/en/practice/talent-coach-programme/build-and-progress/progressing-through-the-thirds.php) · [即時奪回](https://www.fifatrainingcentre.com/en/practice/elite-sessions/transition-to-defending/preparing-and-executing-counter-pressing.php)
 
 ## ブラウザAIからシーンを作る（WebMCP）
 

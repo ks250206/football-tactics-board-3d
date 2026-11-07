@@ -92,3 +92,45 @@ test('390px workspace switches views, scrolls only Inspector and keeps popovers 
   expect(await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 1)).toBe(false);
   await mkdir('artifacts', { recursive: true }); await page.screenshot({ path: 'artifacts/workspace-mobile.png', fullPage: true });
 });
+
+test('switches and persists the interface language and links to the GitHub repository', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  const language = page.locator('.language-select');
+  const canvas = page.getByTestId('scene-canvas');
+  await expect(canvas).toHaveAttribute('data-ready', 'true');
+  await canvas.evaluate(el => el.setAttribute('data-identity', 'same'));
+  const labels = [
+    ['en', 'Language', 'Shot lanes'],
+    ['zh-Hans', '显示语言', '射门线路'],
+    ['ko', '표시 언어', '슈팅 경로'],
+    ['es', 'Idioma', 'Líneas de tiro'],
+    ['pt-BR', 'Idioma', 'Linhas de finalização'],
+  ];
+  for (const [code, selectorLabel, shotLabel] of labels) {
+    await language.selectOption(code);
+    await expect(page.locator('html')).toHaveAttribute('lang', code);
+    await expect(language).toHaveAccessibleName(selectorLabel);
+    await expect(page.getByRole('button', { name: shotLabel, exact: true })).toBeVisible();
+  }
+  await expect(canvas).toHaveAttribute('data-identity', 'same');
+  const repo = page.getByRole('link', { name: 'Repositório no GitHub' });
+  await expect(repo).toHaveAttribute('href', 'https://github.com/ks250206/football-tactics-board-3d');
+  await expect(repo).toHaveAttribute('target', '_blank');
+  await page.getByRole('button', { name: 'Cenários', exact: true }).click();
+  const scenarios = page.getByLabel('Tipo de cenário');
+  await expect(scenarios.locator('option[value="phase:build-up"]')).toHaveText('Posse / Saída de bola');
+  await page.keyboard.press('Escape');
+  await mkdir('artifacts', { recursive: true });
+  await page.screenshot({ path: 'artifacts/workspace-portuguese.png' });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(language).toHaveValue('pt-BR');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
+  await expect(repo).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.screenshot({ path: 'artifacts/workspace-portuguese-mobile.png' });
+  expect(errors).toEqual([]);
+});

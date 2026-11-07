@@ -1,3 +1,4 @@
+import { useT } from "./i18n";
 import { Icon } from "./Icon";
 import type { LookAlignment, LookTarget } from "./tactics";
 const actions = [
@@ -13,11 +14,12 @@ export function OrientationControls({
   onOrient: (target: LookTarget, alignment: LookAlignment, scope: "selected" | "all") => void;
   onReset: () => void;
 }) {
+  const t = useT();
   return (
     <div className="orientation-controls">
       <div className="orientation-heading">
-        <span>選択した選手の向き</span>
-        <button className="icon-button" aria-label="首と上下視線を正面へ戻す" onClick={onReset}>
+        <span>{t("選択した選手の向き")}</span>
+        <button className="icon-button" aria-label={t("首と上下視線を正面へ戻す")} onClick={onReset}>
           <Icon name="undo" size={17} />
         </button>
       </div>
@@ -29,12 +31,12 @@ export function OrientationControls({
             onClick={() => onOrient(target, alignment, "selected")}
           >
             <Icon name="target" size={15} />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </button>
         ))}
       </div>
       <details className="bulk-gaze">
-        <summary>全員の向き（22人）</summary>
+        <summary>{t("全員の向き（22人）")}</summary>
         <div className="orientation-grid">
           {actions.map(([target, alignment, , label]) => (
             <button
@@ -43,7 +45,7 @@ export function OrientationControls({
               onClick={() => onOrient(target, alignment, "all")}
             >
               <Icon name="target" size={15} />
-              <span>{label}</span>
+              <span>{t(label)}</span>
             </button>
           ))}
         </div>

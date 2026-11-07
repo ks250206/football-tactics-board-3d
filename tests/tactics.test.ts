@@ -204,7 +204,7 @@ describe("phases and viewing", () => {
           expect(Object.keys(f.players)).toHaveLength(22);
           expect(Number.isFinite(f.ball.x)).toBe(true);
         }
-        for (const t of [3, 6, 9])
+        for (const { t } of project.frames.slice(1, -1))
           expect(
             Math.abs(sample(project, t - 0.00001).ball.x - sample(project, t + 0.00001).ball.x),
           ).toBeLessThan(0.001);
@@ -230,9 +230,15 @@ describe("phases and viewing", () => {
           "home",
         );
     const attack = phase("final-third");
-    expect(attack.frames.at(-1)!.ball.x).toBeLessThan(attack.frames[2].ball.x);
+    expect(sample(attack, 10).ball.x).toBeLessThan(sample(attack, 8.8).ball.x);
+    const buildup = phase("build-up");
+    expect(sample(buildup, 1).ball.owner).toBe("home-1");
+    expect(sample(buildup, 1.9).ball.owner).toBeNull();
+    expect(sample(buildup, 2).ball.owner).toBe("home-3");
+    expect(sample(phase("counter"), 0).ball.owner).toBe("away-6");
+    expect(sample(phase("counter"), 1).ball.owner).toBe("home-6");
     const overload = phase("overload").frames[0].players,
-      [a, b, c] = ["home-7", "home-9", "home-11"].map((id) => overload[id]);
+      [a, b, c] = ["home-2", "home-7", "home-8"].map((id) => overload[id]);
     expect(Math.abs((b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z))).toBeGreaterThan(1);
     const retreat = phase("recovery");
     expect(retreat.frames.at(-1)!.players["home-6"].x).toBeLessThan(
