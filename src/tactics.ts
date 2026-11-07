@@ -14,6 +14,7 @@ import {
   type Project,
   type Team,
 } from "./core";
+import { choreographPhase } from "./phaseChoreography";
 
 export const FORMATIONS = [
   "4-3-3",
@@ -265,209 +266,81 @@ export function bakeDefence(project: Project): Project {
 export interface Phase {
   id: string;
   name: string;
-  third: Third;
   defending?: boolean;
-  formation: string;
   note: string;
 }
 export const PHASES: Phase[] = [
   {
     id: "build-up",
     name: "保持 / 自陣ビルドアップ",
-    third: "defensive",
-    formation: "4-2-3-1",
-    note: "CB→ボランチ→SBの出口をつくる",
+    note: "GKと後方3枚でプレスを引きつけ、ボランチ経由で右サイドへ",
   },
   {
     id: "progression",
     name: "保持 / ミドルサード前進",
-    third: "middle",
-    formation: "3-2-5",
     note: "縦パスと3人目のサポート",
   },
   {
     id: "final-third",
     name: "保持 / アタッキングサード崩し",
-    third: "attacking",
-    formation: "2-3-5",
     note: "ハーフスペースからカットバック",
   },
   {
     id: "switch",
     name: "保持 / サイドチェンジ",
-    third: "middle",
-    formation: "3-2-5",
     note: "片側に寄せて逆サイドへ展開",
   },
   {
     id: "overload",
     name: "保持 / サイドの数的優位",
-    third: "attacking",
-    formation: "3-2-5",
     note: "ウイング・IH・SBの三角形",
   },
   {
     id: "counter",
     name: "攻撃移行 / カウンター",
-    third: "middle",
-    formation: "4-3-3",
     note: "奪取地点から前線へ進出",
   },
   {
     id: "rest-defence",
     name: "保持 / レストディフェンス",
-    third: "attacking",
-    formation: "3-2-5",
     note: "攻撃後方に3+2を残す",
   },
   {
     id: "high-press",
     name: "非保持 / 敵陣ハイプレス",
-    third: "attacking",
     defending: true,
-    formation: "4-2-4",
     note: "相手の自陣保持に対する高い守備ブロック",
   },
   {
     id: "mid-block",
     name: "非保持 / ミドルブロック",
-    third: "middle",
     defending: true,
-    formation: "4-4-2",
     note: "相手の中盤保持に対する横スライド",
   },
   {
     id: "low-block",
     name: "非保持 / 自陣ローブロック",
-    third: "defensive",
     defending: true,
-    formation: "5-4-1",
     note: "相手の崩しに対して中央を閉じる",
   },
   {
     id: "counterpress",
     name: "守備移行 / 即時奪回",
-    third: "attacking",
     defending: true,
-    formation: "4-3-3",
     note: "ロスト直後、ボール近傍を圧縮",
   },
   {
     id: "recovery",
     name: "守備移行 / リトリート",
-    third: "defensive",
     defending: true,
-    formation: "4-1-4-1",
     note: "中盤から自陣へブロックを戻す",
   },
 ];
 
-/** Build a complete editable 12-second choreography, including the opposing block. */
+/** Build a complete editable choreography in the requested team's perspective. */
 export function phaseProject(base: Project, phase: Phase, team: Team): Project {
-  const other: Team = team === "home" ? "away" : "home",
-    attack = phase.defending ? other : team,
-    defend = phase.defending ? team : other;
-  const third: Third = phase.defending
-    ? ({ defensive: "attacking", middle: "middle", attacking: "defensive" } as const)[phase.third]
-    : phase.third;
-  const project: Project = {
-    version: 1,
-    name: phase.name,
-    duration: 12,
-    roster: clone(base.roster),
-    frames: [],
-  };
-  const attackers = squad(project.roster, attack).outfield;
-  // Slots are formation order, not assumptions about a player's shirt number.
-  const receivers =
-    phase.id === "switch"
-      ? [2, 5, 9]
-      : phase.id === "final-third"
-        ? [6, 9, 7]
-        : phase.id === "build-up"
-          ? [0, 4, 1]
-          : [3, 5, 8];
-  const sign = attack === "home" ? 1 : -1;
-  for (const t of [0, 3, 6, 9, 12]) {
-    const u = t / 12,
-      tilt =
-        phase.id === "counter"
-          ? u * 20
-          : phase.id === "recovery"
-            ? u * 18
-            : phase.id === "counterpress"
-              ? -u * 8
-              : u * 5;
-    const players = {
-      ...shapePoses(project, {
-        ...DEFAULT_SHAPE,
-        team: attack,
-        third,
-        formation: phase.defending ? "4-3-3" : phase.formation,
-        tilt,
-      }),
-      ...shapePoses(project, {
-        ...DEFAULT_SHAPE,
-        team: defend,
-        third:
-          phase.id === "recovery"
-            ? "middle"
-            : phase.defending
-              ? phase.third
-              : ({ defensive: "attacking", middle: "middle", attacking: "defensive" } as const)[
-                  third
-                ],
-        formation: phase.defending ? phase.formation : "4-4-2",
-        compactness: 80,
-        width: 42,
-        tilt: phase.id === "recovery" ? -u * 20 : -tilt,
-      }),
-    };
-    // Off-ball rotations distinguish the scripted phases without claiming tactical intelligence.
-    for (const [i, p] of attackers.entries()) {
-      const pose = players[p.id];
-      pose.z = clamp(pose.z + Math.sin(u * Math.PI) * (i % 2 ? 3 : -3), -31, 31);
-    }
-    if (phase.id === "overload")
-      for (const [n, i] of [5, 7, 9].entries()) {
-        players[attackers[i].id].x = sign * [38, 45, 41][n];
-        players[attackers[i].id].z = sign * (18 + n * 4);
-      }
-    if (phase.id === "final-third") {
-      Object.assign(players[attackers[6].id], { x: sign * (34 + u * 6), z: sign * -12 });
-      Object.assign(players[attackers[9].id], { x: sign * (40 + u * 8), z: sign * 26 });
-      Object.assign(players[attackers[7].id], { x: sign * (38 - u * 3), z: 0 });
-    }
-    const from = players[attackers[receivers[t < 6 ? 0 : 1]].id],
-      to = players[attackers[receivers[t < 6 ? 1 : 2]].id];
-    const v = (t % 6) / 6;
-    // Free ball waypoints give a continuous ground pass independent of torso turns.
-    const ball = {
-      x: t === 12 ? to.x : from.x + (to.x - from.x) * v,
-      z: t === 12 ? to.z : from.z + (to.z - from.z) * v,
-      y: 0.11,
-      owner: null,
-      arc: 0,
-    };
-    if (phase.id === "counterpress") {
-      ball.x -= sign * 2;
-      const nearby = squad(project.roster, defend)
-        .outfield.sort((a, b) => distance(players[a.id], ball) - distance(players[b.id], ball))
-        .slice(0, 3);
-      nearby.forEach((p, i) => {
-        const pose = players[p.id];
-        pose.x += (ball.x + sign * 1.5 - pose.x) * u * 0.7;
-        pose.z += (ball.z + (i - 1) * 2 - pose.z) * u * 0.7;
-      });
-    }
-    project.frames.push({ t, players, ball });
-  }
-  project.defence = defencePlan(project, project.frames[0], defend, "zone");
-  if (phase.id === "recovery" || phase.id === "counterpress") {
-    // Retreat and counterpress follow authored movements rather than fixed live anchors.
-    delete project.defence;
-  }
-  return project;
+  const other: Team = team === "home" ? "away" : "home";
+  return choreographPhase(base, phase.id, phase.name, phase.defending ? other : team);
 }
 
 export interface FpsInput {

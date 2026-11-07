@@ -1,3 +1,4 @@
+import { useT } from "./i18n";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Frame, Project, ViewSettings } from "./core";
 import { clamp } from "./core";
@@ -22,6 +23,7 @@ interface Props {
   onControl: (input: FpsInput) => void;
 }
 export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
+  const t = useT();
   const host = useRef<HTMLDivElement>(null),
     engine = useRef<TacticsEngine | null>(null),
     current = useRef(props);
@@ -176,6 +178,9 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
   useEffect(() => {
     engine.current?.update(props.project, props.frame, props.selected, props.settings, props.xg);
   }, [props.project, props.frame, props.selected, props.settings, props.xg]);
+  useEffect(() => {
+    engine.current?.canvas.setAttribute("aria-label", t("リアルタイム3Dピッチ"));
+  }, [t, props.settings.quality, rosterKey]);
   const player = props.project.roster.find((p) => p.id === props.selected)!;
   return (
     <div className="stage-shell" data-testid="stage" data-camera-player={props.selected}>
@@ -183,7 +188,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
         ref={host}
         className="stage-canvas"
         tabIndex={0}
-        aria-label="3D操作画面"
+        aria-label={t("3D操作画面")}
         data-fps-active={inputActive}
         onPointerDown={(e) => {
           if (props.settings.camera !== "eye" || e.button !== 0) return;
@@ -247,11 +252,10 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
       />
       {error ? (
         <div className="render-error" role="alert">
-          <strong>3D表示を開始できません</strong>
-          <p>{error}</p>
+          <strong>{t("3D表示を開始できません")}</strong>
+          <p>{t(error)}</p>
           <p>
-            WebGL
-            2対応ブラウザで、ハードウェアアクセラレーションを有効にしてください。2D編集とJSON保存は引き続き利用できます。
+            {t("WebGL 2対応ブラウザで、ハードウェアアクセラレーションを有効にしてください。2D編集とJSON保存は引き続き利用できます。")}
           </p>
         </div>
       ) : (
@@ -297,7 +301,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
             </div>
           </div>
           <div className="look-hint">
-            {inputError ||
+            {t(inputError ||
               (props.settings.camera === "eye"
                 ? props.settings.fps
                   ? locked
@@ -306,7 +310,7 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage(props, ref) {
                   : "ドラッグで首振り · 体の向きは変わりません"
                 : props.settings.camera === "orbit"
                   ? "ドラッグで回転 · ホイールでズーム · 右ドラッグで移動"
-                  : "選択した選手を後方から追従")}
+                  : "選択した選手を後方から追従"))}
           </div>
         </>
       )}

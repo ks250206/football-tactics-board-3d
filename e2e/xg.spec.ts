@@ -34,13 +34,29 @@ async function dragPlayer(page: Page, id: string, x: number, z: number) {
   await page.mouse.move(target.x, target.y, { steps: 5 }); await page.mouse.up();
 }
 
+async function enableOverlaysWithoutMovingBoard(page: Page) {
+  const board = page.getByTestId('tactics-board');
+  const anchor = page.getByTestId('analysis-anchor');
+  const initialBox = await board.boundingBox();
+  await expect(anchor).toHaveText('');
+  for (const name of ['xGヒートマップ', 'シュートコース']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(anchor).toContainText('起点：ボール');
+    expect(await board.boundingBox()).toEqual(initialBox);
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(anchor).toHaveText('');
+    expect(await board.boundingBox()).toEqual(initialBox);
+  }
+  await page.getByRole('button', { name: 'xGヒートマップ', exact: true }).click();
+  await page.getByRole('button', { name: 'シュートコース', exact: true }).click();
+}
+
 test('single XGBoost result, heatmap and goal masks update on a real defender drag', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const external: string[] = []; page.on('request', r => { if (r.url().startsWith('http') && !r.url().startsWith('http://127.0.0.1:4173/')) external.push(r.url()); });
   await load(page);
   await expect(page.getByRole('button', { name: '学習済みxG', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'xGヒートマップ', exact: true }).click();
-  await page.getByRole('button', { name: 'シュートコース', exact: true }).click();
+  await enableOverlaysWithoutMovingBoard(page);
   await inspector(page, '分析'); await settled(page);
   await expect(page.getByTestId('xg-heatmap').locator('rect')).toHaveCount(884);
   await expect(page.getByTestId('scene-canvas')).toHaveAttribute('data-xg-heatmap-cells', '884');
@@ -107,8 +123,7 @@ for (const team of ['home', 'away'] as const) test(`free-ball ${team}: locked at
 test('mobile analysis, explicit 1v1 and timeline edits remain accessible', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await load(page);
   await page.getByRole('button', { name: 'Inspectorを閉じる', exact: true }).click();
-  await page.getByRole('button', { name: 'xGヒートマップ', exact: true }).click();
-  await page.getByRole('button', { name: 'シュートコース', exact: true }).click();
+  await enableOverlaysWithoutMovingBoard(page);
   await inspector(page, '分析'); await settled(page);
   await page.getByLabel('1対1を仮定', { exact: true }).check(); await settled(page);
   await expect(page.getByTestId('xg-readout')).toContainText('近距離・1対1');

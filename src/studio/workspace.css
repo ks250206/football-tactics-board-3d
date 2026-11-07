@@ -36,7 +36,9 @@
 .score-chip { display:flex; align-items:center; gap:6px; background:#f0f4fa; border:1px solid #e2e8f0; color:#314d69; border-radius:6px; padding:5px 8px; font-size:11px; }
 .score-chip b { font-size:17px; font-variant-numeric:tabular-nums; }
 .score-chip small { font-size:9px; color:#6c7f90; }
-.analysis-anchor { padding:0 12px 9px; font-size:11px; color:#526779; line-height:1.6; }
+.analysis-anchor { flex:0 0 auto; block-size:27px; padding:0 12px 9px; font-size:11px; color:#526779; line-height:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.github-link { display:inline-grid; place-items:center; text-decoration:none; }
+.language-select { width:88px; min-width:0; padding:4px; font-size:12px; }
 .studio-shell .view-actions { gap:4px; width:auto; }
 .studio-shell .view-actions .segmented { margin:0; }
 .studio-shell .segmented button { padding:5px 8px; font-size:11px; }
@@ -147,6 +149,7 @@
 .studio-shell .timeline-actions .button { font-size:11px; padding:6px 8px; }
 .studio-shell .tracks { grid-template-columns:104px minmax(0,1fr); padding:6px 20px 6px 12px; }
 .studio-shell .track-labels { font-size:11px; grid-template-rows:18px repeat(3,18px); }
+.studio-shell .track-labels>span { white-space:nowrap; }
 .studio-shell .ruler { height:18px; }.studio-shell .track-row { height:18px; }
 .studio-shell .track-labels>span:first-child, .studio-shell .ruler>span { font-size:10px; }
 .studio-shell .timeline-foot { padding:5px 12px; line-height:1.5; font-size:10px; }
@@ -181,7 +184,7 @@
   .studio-shell .brand strong { font-size:16px; }.studio-shell .brand small { display:none; }.studio-shell .brand-mark { display:none; }
   .studio-shell .studio-project { min-width:0; }.studio-shell .project-title { font-size:12px; padding:2px; }
   .studio-shell .header-actions { gap:1px; }.studio-shell .header-actions .button { padding:6px; }.studio-shell .header-actions .button span { display:none; }.studio-shell .header-actions .icon-button { width:26px; height:28px; }
-  .studio-shell .header-actions .icon-button[aria-label="使い方"] { display:none; }
+  .studio-shell .header-actions .icon-button[data-icon="help"] { display:none; }
   .studio-shell .studio-main { padding:0 8px 8px; gap:6px; }
   .workspace-toolbar { min-height:40px; gap:6px; }
   .studio-shell .workspace-toolbar>.button { font-size:11px; padding:6px 8px; }

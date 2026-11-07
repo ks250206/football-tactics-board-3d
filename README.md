@@ -45,9 +45,11 @@ pnpm run preview
 - 選択選手から受け手をクリックして1.2秒のパスを作成。保持者、自由なボール位置、高さ、浮き高さの調整。
 - 水平視野角55–120°、目線1.40–2.05 m、歩行時の微小な揺れのON / OFF。
 - 現在の視野に入る味方、他の選手による遮蔽、直線パスコース上の相手を**別々に判定**。
-- ビルドアップ / スルーパス / オーバーラップの編集可能なデモ。
+- ビルドアップ / スルーパス / オーバーラップのデモと、攻守の12局面を編集できるシナリオ。
+- WebMCP対応のブラウザAIから、試合の再現やオリジナルの戦術シーンをプレビュー。
 - ブラウザへの自動保存、JSON入出力、3DのPNG保存、対応ブラウザでのWebM / MP4録画。
 - デスクトップとモバイルのレスポンシブレイアウト。モバイルは軽量モードで開始。
+- 日本語、英語、中国語（簡体字）、韓国語、スペイン語、ポルトガル語（ブラジル）。右上の言語設定をブラウザに保存します。
 
 ## 最初の操作
 
@@ -58,6 +60,40 @@ pnpm run preview
 5. 再生して、受け手がどの角度・距離に見えるかを確認する。
 
 ボール自体をクリックすると、保持者・高さ・次区間の浮き高さを編集できます。自由カメラは左ドラッグで回転、右ドラッグで平行移動、ホイールでズームします。
+
+## 試合の局面を再生する
+
+「シナリオ」から試合の局面と対象チームを選び、開始配置をプレビューできます。ビルドアップではGKと後方3枚でプレスを引きつけ、中盤では縦パスを受けた選手が3人目へつなぎます。サイドの数的優位、逆サイドへの展開、カットバック、ハイプレス、ミドル／ローブロック、守備への切り替えも収録しています。
+
+選手の位置とパスのタイミングは、戦術を説明するために設定したキーフレームです。位置はキー間を直線補間し、パスを出すまでは保持者にボールが付きます。選手間の衝突やプレー判断はシミュレーションしていません。配置と動きの参考にした資料は、FIFA Training Centreの解説です。[後方3枚と内側のレーン](https://www.fifatrainingcentre.com/en/fifa-world-cup-2026/building-up-in-a-back-three-and-exploiting-inside-channels.php) · [3人目を使った前進](https://www.fifatrainingcentre.com/en/practice/talent-coach-programme/build-and-progress/progressing-through-the-thirds.php) · [即時奪回](https://www.fifatrainingcentre.com/en/practice/elite-sessions/transition-to-defending/preparing-and-executing-counter-pressing.php)
+
+## ブラウザAIからシーンを作る（WebMCP）
+
+1. WebMCP対応のChromiumブラウザでTOUCHLINEを開きます。ローカルで試す場合は、Chromeの `chrome://flags/#enable-webmcp-testing` を有効にして再起動し、`http://localhost:5173` を開きます。ブラウザAIには、開いているタブのWebMCPツールを呼び出せるクライアントを使います。[ChromeのWebMCP設定](https://developer.chrome.com/docs/ai/webmcp)
+2. AIに「このTOUCHLINEで、25/26のウェストハム対アーセナルのトロサールの決勝ゴールを再現して」と指示します。AIは収録済みの場面を探し、シーケンスのプレビューを開けます。
+3. 配置を確認して「シーケンス全体の置き換えを確認しました」にチェックし、「シーケンスを置き換える」を押します。時間軸の再生ボタンで動きを確認できます。適用前はキャンセル、適用後は「元に戻す」が使えます。
+
+「シナリオ」→「試合の再現」からも、同じ編集可能な場面を選べます。
+
+| 場面 | 開始から得点までの流れ | 再生時間 |
+| --- | --- | --- |
+| [13/14 アーセナル対ノリッジ · ウィルシャー](https://arsenal-fc.shorthandstories.com/minute-detail-16-30/index.html) | 自陣で受け直し、カソルラが前進。ジルーとの連続したワンタッチからボレー | 16秒 |
+| [08/09 チェルシー対バルセロナ · イニエスタ](https://www.uefa.com/uefachampionsleague/news/01d9-0e72254a5b3a-23a74c5aeec1-1000/) | バルセロナが押し込み、クリアのこぼれ球をメッシが横へ送り、イニエスタがボックス外から得点 | 11.5秒 |
+| [12/13 マンチェスター・U対アストン・ヴィラ · ファン・ペルシ](https://www.manutd.com/en/news/utd-podcast-van-persie-recalls-2013-aston-villa-hat-trick) | 自陣からルーニーへつなぎ、背後へのロングパスをファン・ペルシが直接ボレー | 11秒 |
+| [11/12 レアル・マドリード対アヤックス · C・ロナウド](https://www.uefa.com/uefachampionsleague/news/0254-0d7d69c526a7-1f168d451a8e-1000--masterful-madrid-too-much-for-ajax/) | ラモスの自陣からの持ち出し、エジルとカカを経由した速攻、ベンゼマのクロスからワンタッチ | 14秒 |
+| [10/11 レアル・マドリード対バルセロナ · メッシ](https://www.uefa.com/uefachampionsleague/news/01f0-0e7810b91a10-94576e9fc2aa-1000--ten-man-madrid-undone-by-messi-magic/) | 中盤で保持し、ブスケツから受けたメッシが複数の守備者をかわして得点 | 12秒 |
+| [14/15 バルセロナ対バイエルン · メッシ](https://www.uefa.com/uefachampionsleague/news/0221-0e909116af7b-fe3ef95b6374-1000--messi-double-puts-barca-in-control-against-bayern/) | 中盤からラキティッチがメッシへ。ボアテングの逆を取り、ノイアーを越すチップ | 11秒 |
+| [25/26 ウェストハム対アーセナル · トロサール](https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race) | ウーデゴールがペナルティーエリアに侵入し、折り返しをトロサールが決める | 6秒 |
+
+選手の位置、経過秒数、ボール軌道と、記録で特定できない前段のつなぎは推定です。共通の選手モデルを使い、退場者に対応する編集用の枠はプレーから離れた位置に置いています。ボアテングの反応は位置と体の向きで表現しています。ウィルシャーとロナウドの前段は、当時の報道と選手本人の回想も参考にしています。[ウィルシャーの回想](https://www.fourfourtwo.com/features/theres-only-two-clubs-that-id-feel-completely-comfortable-walking-in-and-saying-hello-to-everyone-exclusive-jack-wilshere-speaks-to-henry-winter-about-marathons-mistakes-and-managers-hes-worked-with) · [マドリードの速攻のパス順](https://as.com/futbol/2011/09/27/mas_futbol/1317074466_850215.html)
+
+収録されていない場面やオリジナルの練習も、AIが選手とボールのキーフレームを組み立ててプレビューできます。試合資料を使う場合は、AIに元資料や分かっている動きを伝えてください。TOUCHLINE内のツールはタブ内で動き、収録済み見本の一覧と、入力された配置の検証・プレビューを扱います。
+
+| WebMCPツール | 用途 |
+| --- | --- |
+| `touchline_list_replays` | 収録済みの場面、試合情報、出典を取得 |
+| `touchline_preview_replay` | 場面IDからプレビューを開く |
+| `touchline_preview_sequence` | 変更した選手とボールをキーフレームで指定し、新しいシーンをプレビュー |
 
 ### ショートカット
 
