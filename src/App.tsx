@@ -1,6 +1,6 @@
 import { useT, LanguageSelect } from "./i18n";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { analyse, clamp, clone, makePass, parseProject, removeKeyframe, sample, upsert, wrap, type Pose, type Project, type ViewSettings } from './core';
+import { analyse, clamp, clone, makePass, parseProject, removeKeyframe, sample, upsert, wrap, type Pose, type Project, type Team, type ViewSettings } from './core';
 import { createScenario as createDemo } from './scenarios';
 import { createCanvasRecorder } from './recording';
 import { Board } from './Board';
@@ -41,6 +41,7 @@ export default function App(){
   const [time,setTime]=useState(0),timeRef=useRef(0);timeRef.current=time;
   const [playing,setPlaying]=useState(false),[speed,setSpeed]=useState(1),[loop,setLoop]=useState(true);
   const [lockedPlayer,setLockedPlayer]=useState<string|null>(null);
+  const [orientationTeams,setOrientationTeams]=useState<Team[]>(['home','away']);
   const [selected,setSelected]=useState('home-6'),[ballActive,setBallActive]=useState(false),[passMode,setPassMode]=useState(false);
   const [settings,setSettings]=useState<ViewSettings>(()=>({camera:'eye',lighting:'day',quality:window.innerWidth<700?'low':'balanced',fov:90,eye:1.72,labels:false,paths:true,vision:true,bob:false,ballLook:true,fps:false,sensitivity:.18,lanes:false,bielsa:false}));
   const [aspect,setAspect]=useState(1.6),[saved,setSaved]=useState("保存済み"),[toast,setToast]=useState(''),[help,setHelp]=useState(false),[recording,setRecording]=useState(false);
@@ -140,13 +141,19 @@ export default function App(){
       setView('fps',false);recorder.current=rec;rec.start(250);timeRef.current=0;setTime(0);setSpeed(1);setLoop(false);setRecording(true);setPlaying(true);
     }catch(e){stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;setToast(e instanceof Error?e.message:"録画を開始できませんでした。");}
   };
-  const orient=(target:LookTarget,alignment:LookAlignment,scope:'selected'|'all')=>{
-    const current=projectRef.current,ids=scope==='all'?current.roster.map(p=>p.id):[selectedSafe];
+  const orient=(target:LookTarget,alignment:LookAlignment,scope:'selected'|readonly Team[])=>{
+    const current=projectRef.current;
+    const players=current.roster.filter(player=>scope==='selected' ? player.id===selectedSafe : scope.includes(player.team));
+    if(!players.length)return;
+    const ids=players.map(player=>player.id);
     const patches=orientPlayers(current,frame,ids,target,alignment,settings.eye);
-    const base=current.defence&&ids.some(id=>current.roster.find(p=>p.id===id)?.team===current.defence!.team)?bakeDefence(current):current;
+    const base=players.some(player=>player.team===current.defence?.team)?bakeDefence(current):current;
+    const scopeKey=scope==='selected'?selectedSafe:[...scope].sort().join('-');
     setPlaying(false);setSettings(s=>({...s,ballLook:false}));
-    commit(upsert(base,timeRef.current,f=>{for(const id of ids)f.players[id]={...f.players[id],...patches[id]};}),`orient-${target}-${alignment}-${scope}-${selectedSafe}`);
+    commit(upsert(base,timeRef.current,f=>{for(const id of ids)f.players[id]={...f.players[id],...patches[id]};}),`orient-${target}-${alignment}-${scopeKey}`);
   };
+  const toggleOrientationTeam=(team:Team)=>setOrientationTeams(current=>
+    current.includes(team)?current.filter(value=>value!==team):[...current,team]);
   const shape=(options:ShapeSettings,scope:'team'|'outfield'='team')=>{try{setPlaying(false);commit(applyShape(projectRef.current.defence?.team===options.team?bakeDefence(projectRef.current):projectRef.current,timeRef.current,options,scope),`shape-${options.team}`);}catch(e){setToast(e instanceof Error?e.message:"配置を適用できませんでした。");}};
   const setDefence=(team:'home'|'away',mode:'zone'|'man'|'off')=>{setPlaying(false);const base=bakeDefence(projectRef.current);commit(mode==='off'?base:{...base,defence:defencePlan(base,frame,team,mode)});};
   const xgTeam=analysisTeam(project,frame,focusedSafe,cameraLocked);
@@ -217,7 +224,7 @@ export default function App(){
           {recording&&<div className="recording-banner"><i/>RECORDING · {time.toFixed(1)} / {project.duration}s <button onClick={toggleRecord}>{t("停止して保存")}</button></div>}
         </>}
         selection={<div className="inspector"><div className="selection-heading"><div className={`number-tile ${player.team==='away'?'away':''}`}>{ballActive?<Icon name="ball" size={24}/>:String(player.number).padStart(2,'0')}</div><div className="selection-title"><span className="eyebrow">{ballActive?'BALL CONTROLS':'SELECTED PLAYER'}</span><select aria-label={t("編集する選手")} value={selectedSafe} onChange={e=>{setSelected(e.target.value);setBallActive(false);}}>{project.roster.map(p=><option key={p.id} value={p.id}>{p.team==='home'?'HOME':'AWAY'} · {String(p.number).padStart(2,'0')} / {p.role}</option>)}</select></div><div className="position-readout"><span>X <b>{(ballActive?frame.ball.x:pose.x).toFixed(1)}</b></span><span>Z <b>{(ballActive?frame.ball.z:pose.z).toFixed(1)}</b></span></div></div>
-          {ballActive?<div className="ball-controls"><label className="field-label">{t("ボール保持者")}<select aria-label={t("ボール保持者")} value={frame.ball.owner??''} onChange={e=>ballEdit({owner:e.target.value||null})}><option value="">{t("自由な位置 / パス中")}</option>{project.roster.map(p=><option key={p.id} value={p.id}>{p.team.toUpperCase()} {p.number} · {p.role}</option>)}</select></label><div className="slider-grid"><Slider label={t("ボールの高さ")} value={frame.ball.y} min={.11} max={8} step={.01} unit="m" onChange={y=>ballEdit({y,owner:null})}/><Slider label={t("次区間の浮き高さ")} value={frame.ball.arc} min={0} max={8} step={.1} unit="m" onChange={arc=>ballEdit({arc})}/></div></div>:<><div className="slider-grid"><Slider label={t("体の向き")} value={wrap(pose.body)} min={-180} max={180} onChange={body=>editPose({body},'body')} testId="body-slider"/><Slider label={t("首の向き")} value={pose.head} min={-110} max={110} onChange={head=>editPose({head},'head')} testId="head-slider"/></div><div className="gaze-controls"><Slider label={t("視線の上下")} value={pose.pitch} min={-45} max={45} onChange={pitch=>editPose({pitch},'pitch')}/><OrientationControls onOrient={orient} onReset={()=>editPose({head:0,pitch:0})}/></div></>}
+          {ballActive?<div className="ball-controls"><label className="field-label">{t("ボール保持者")}<select aria-label={t("ボール保持者")} value={frame.ball.owner??''} onChange={e=>ballEdit({owner:e.target.value||null})}><option value="">{t("自由な位置 / パス中")}</option>{project.roster.map(p=><option key={p.id} value={p.id}>{p.team.toUpperCase()} {p.number} · {p.role}</option>)}</select></label><div className="slider-grid"><Slider label={t("ボールの高さ")} value={frame.ball.y} min={.11} max={8} step={.01} unit="m" onChange={y=>ballEdit({y,owner:null})}/><Slider label={t("次区間の浮き高さ")} value={frame.ball.arc} min={0} max={8} step={.1} unit="m" onChange={arc=>ballEdit({arc})}/></div></div>:<><div className="slider-grid"><Slider label={t("体の向き")} value={wrap(pose.body)} min={-180} max={180} onChange={body=>editPose({body},'body')} testId="body-slider"/><Slider label={t("首の向き")} value={pose.head} min={-110} max={110} onChange={head=>editPose({head},'head')} testId="head-slider"/></div><div className="gaze-controls"><Slider label={t("視線の上下")} value={pose.pitch} min={-45} max={45} onChange={pitch=>editPose({pitch},'pitch')}/><OrientationControls activeTeams={orientationTeams} onToggleTeam={toggleOrientationTeam} onOrient={orient} onReset={()=>editPose({head:0,pitch:0})}/></div></>}
           <div className="inspector-foot"><span>{t("視線方向")} <b>{Math.round(heading)}°</b><i>{t("体 + 首")}</i></span><button className={`button small ${passMode?'primary':'secondary'}`} onClick={()=>{setPlaying(false);setPassMode(v=>!v);}} data-testid="pass-button"><Icon name={passMode?'close':'arrow'} size={15}/>{passMode?t("キャンセル"):t("パスを作る")}</button></div></div>}
         team={<TacticsPanel project={project} disabled={recording} onShape={shape} onDefence={setDefence} onScenario={openScenario}/>}
         analysis={<><div className="analysis-subject"><span className="eyebrow">ANALYSIS SUBJECT</span><strong>{xgTeam.toUpperCase()}{t("の攻撃")} {cameraLocked?t("· 視点固定"):''}</strong><p>{t("シュートの起点はボール位置。編集する選手とは独立しています。")}</p></div>

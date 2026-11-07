@@ -302,7 +302,7 @@ test("locks the camera while editing others and authors selected/all-player gaze
   const moved = await saved(page);
   expect(moved.frames[0].players["home-6"]).toEqual(original.frames[0].players["home-6"]);
   expect(moved.frames[0].players["away-2"].x).not.toBe(original.frames[0].players["away-2"].x);
-  const verify = (project: any, target: "ball" | "goal", body: boolean, all: boolean) => {
+  const verify = (project: any, target: "ball" | "goal", body: boolean, scope: "selected" | "all" | "home" | "away") => {
     const f = project.frames[0],
       owner = f.ball.owner ? f.players[f.ball.owner] : null;
     const ball = owner
@@ -311,7 +311,8 @@ test("locks the camera while editing others and authors selected/all-player gaze
           z: owner.z + Math.sin((owner.body * Math.PI) / 180) * 0.48,
         }
       : f.ball;
-    const roster = all ? project.roster : project.roster.filter((p: any) => p.id === "away-2");
+    const roster = project.roster.filter((p: any) =>
+      scope === "all" || (scope === "selected" ? p.id === "away-2" : p.team === scope));
     for (const player of roster) {
       const p = f.players[player.id],
         q = target === "ball" ? ball : { x: player.team === "home" ? 52.5 : -52.5, z: 0 };
@@ -321,10 +322,36 @@ test("locks the camera while editing others and authors selected/all-player gaze
     }
   };
   await page.getByRole("button", { name: "相手ゴールを見る", exact: true }).click();
-  verify(await saved(page), "goal", false, false);
+  verify(await saved(page), "goal", false, "selected");
   await page.getByRole("button", { name: "体も顔も相手ゴールを見る", exact: true }).click();
-  verify(await saved(page), "goal", true, false);
+  verify(await saved(page), "goal", true, "selected");
   await page.getByText("全員の向き（22人）", { exact: true }).click();
+  const teamScope = page.getByRole("group", { name: "向きを変更するチーム" });
+  const home = teamScope.getByRole("button", { name: "HOME", exact: true });
+  const away = teamScope.getByRole("button", { name: "AWAY", exact: true });
+  const bulk = page.getByRole("group", { name: "チームの向きの操作" });
+  const goalAction = bulk.getByRole("button", { name: "体も顔も相手ゴールを見る", exact: true });
+  const beforeHome = await saved(page);
+  await expect(home).toHaveAttribute("aria-pressed", "true");
+  await expect(away).toHaveAttribute("aria-pressed", "true");
+  await away.click();
+  await expect(away).toHaveAttribute("aria-pressed", "false");
+  await goalAction.click();
+  const homeOnly = await saved(page);
+  verify(homeOnly, "goal", true, "home");
+  for (const id of Object.keys(homeOnly.frames[0].players).filter(id => id.startsWith("away-"))) {
+    expect(homeOnly.frames[0].players[id]).toEqual(beforeHome.frames[0].players[id]);
+  }
+  await home.click();
+  await expect(goalAction).toBeDisabled();
+  await away.click();
+  await goalAction.click();
+  const awayOnly = await saved(page);
+  verify(awayOnly, "goal", true, "away");
+  for (const id of Object.keys(awayOnly.frames[0].players).filter(id => id.startsWith("home-"))) {
+    expect(awayOnly.frames[0].players[id]).toEqual(homeOnly.frames[0].players[id]);
+  }
+  await home.click();
   for (const [label, target, body] of [
     ["全員ボールを見る", "ball", false],
     ["全員体も顔もボールを見る", "ball", true],
@@ -332,7 +359,7 @@ test("locks the camera while editing others and authors selected/all-player gaze
     ["全員体も顔も相手ゴールを見る", "goal", true],
   ] as const) {
     await page.getByRole("button", { name: label, exact: true }).click();
-    verify(await saved(page), target, body, true);
+    verify(await saved(page), target, body, "all");
   }
   await expect(page.getByTestId("stage")).toHaveAttribute("data-camera-player", "home-6");
   await page.getByRole("button", { name: "この選手を視点にする", exact: true }).click();

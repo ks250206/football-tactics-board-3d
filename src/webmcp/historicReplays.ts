@@ -216,4 +216,78 @@ const messiBayern = replay({
   cue(11, flight(54,-2.4,.11)),
 ], [1, 13, 17, 5, 18, 31, 21, 16, 9, 25, 3]);
 
-export const historicReplays = [wilshere, iniesta, vanPersie, ronaldo, messiMadrid, messiBayern];
+const cabralWorldCup = replay({
+  id: 'wc-2026-argentina-cabo-verde-lopes-cabral-103',
+  title: '2026 W杯 アルゼンチン対カーボベルデ · ロペス・カブラル 103分',
+  match: '2026-07-03 · FIFA World Cup round of 32 · Argentina 3–2 Cabo Verde (AET)',
+  event: '103rd minute: Yannick Semedo switches play, and Sidny Lopes Cabral cuts in from the left and curls a right-footed equaliser into the far top corner.',
+  aliases: ['2026 W杯 カーボベルデ カブラル アルゼンチン', 'Sidny Lopes Cabral Argentina Cape Verde goal of the tournament'],
+  source: 'https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/sidny-lopes-cabral-cabo-verde-round-of-32-best-goal',
+  note: 'ヤニック・セメドのサイドチェンジを受けたカブラルが左から切り込み、右足でファー上隅に巻き込みます。',
+}, -5, [1, 22, 4, 3, 13, 10, 17, 16, 9, 19, 26], [
+  cue(0, -6,
+    ...formation(1, [[-50,0],[-31,22],[-39,7],[-40,-6],[-33,-20],[-25,4],[-22,19],[-25,-6],[-7,0],[-17,-9],[-17,13]]),
+    ...formation(-1, [[49,0],[3,-23],[6,-9],[6,9],[-16,26],[-2,-4],[-19,-23],[-11,-12],[-30,1],[-20,9],[-17,18]])),
+  cue(1.8, -6, [-6,-9,-4,-127], [-5,-21,27,174], [-8,-14,-15], [7,-25,19]),
+  cue(2.55, -8, [-8,-17,-16,-166], [-5,-24,27], [-9,-32,1], [10,-18,-11]),
+  cue(4.3, lift(-8,4.4), [-8,-23,-20,98], [-5,-28,25,180], [7,-28,20], [2,-33,21]),
+  cue(6.45, -5, [-5,-33,24,203], [7,-32,20,46], [2,-37,19], [-11,-27,18]),
+  cue(7.35, -5, [-5,-34,21,242], [7,-34,19,57], [3,-41,8]),
+  cue(8.55, -5, [-5,-37.1,15.6,226], [7,-35,17,128], [1,-49,1.4]),
+  // Intermediate free-ball cues give the shot its bend across the goal.
+  cue(8.85, flight(-42,7,1.56), [1,-49,-.2,35]),
+  cue(9.13, flight(-47,.2,2.21), [1,-50,-1.6,55]),
+  cue(9.43, flight(-53.2,-3,2.21), [1,-50.9,-2.4,80]),
+  cue(11.5, flight(-54,-3.1,.11)),
+], [23, 26, 13, 6, 3, 5, 20, 24, 9, 10, 15]);
+
+const bellinghamWorldCup = replay({
+  id: 'wc-2026-norway-england-bellingham-93',
+  title: '2026 W杯 ノルウェー対イングランド · ベリンガム 93分',
+  match: '2026-07-11 · FIFA World Cup quarter-final · Norway 1–2 England (AET)',
+  event: '93rd minute: Ørjan Nyland spills Morgan Rogers’ shot and Jude Bellingham converts the rebound from close range.',
+  aliases: ['2026 W杯 準々決勝 ノルウェー ベリンガム 決勝点', 'Bellingham Norway extra-time winner 93 World Cup Rogers Nyland'],
+  source: 'https://www.englandfootball.com/england/mens-senior-team/fixtures-results/2025-26/World-Cup/norway-england-fifa-world-cup-quarter-final-saturday-11-july-2026-match-centre',
+  note: 'イングランドが前進し、ロジャーズのミドルをニーランがこぼしたところをベリンガムが押し込みます。',
+}, -10, [1, 24, 5, 6, 25, 8, 7, 17, 9, 10, 21], [
+  cue(0, -3,
+    ...formation(1, [[-50,0],[-31,21],[-37,6],[-37,-5],[-32,-21],[-27,2],[-20,17],[-23,-8],[-8,1],[-15,-6],[-20,-20]]),
+    ...formation(-1, [[48,0],[-7,-23],[3,-7],[4,8],[-6,23],[-7,2],[-19,-23],[-16,-8],[-31,5],[-23,5],[-19,20]])),
+  cue(1.65, -3, [-3,-3,-8,119], [-6,-12,1], [-8,-19,-9], [9,-9,-1]),
+  cue(2.5, -6, [-6,-13,1,-127], [-8,-20,-8], [-10,-26,4], [10,-16,-5]),
+  cue(3.25, -8, [-8,-22,-8,165], [-7,-22,-24], [8,-25,-9]),
+  cue(5.3, -8, [-8,-29,-5,170], [-10,-33,4], [-9,-36,6], [6,-30,1], [8,-30,-8]),
+  cue(6.2, -8, [-8,-32,-4,167], [-10,-38.5,2], [3,-39,5], [4,-39,-4], [1,-49.5,.2]),
+  cue(6.92, flight(-49.2,.2,.84), [-10,-43,1.2], [1,-49.6,.2,12], [3,-42,5]),
+  cue(7.28, flight(-46.4,1,.24), [-10,-46,1.1,190], [1,-49.4,.5], [3,-43,4]),
+  cue(7.58, flight(-53.4,-1.4,.2), [1,-49.9,-.3]),
+  cue(10, flight(-54,-1.6,.11)),
+], [1, 14, 3, 4, 16, 8, 22, 6, 9, 10, 20]);
+
+const ferranWorldCup = replay({
+  id: 'wc-2026-spain-argentina-ferran-torres-106',
+  title: '2026 W杯 スペイン対アルゼンチン · フェラン・トーレス 106分',
+  match: '2026-07-19 · FIFA World Cup final · Spain 1–0 Argentina (AET)',
+  event: '106th minute: Lamine Yamal finds Pedro Porro, who crosses to the far post. Nico Williams heads it back for Ferran Torres to score first time with his left foot.',
+  aliases: ['2026 W杯 決勝 フェラン・トーレス スペイン', 'Ferran Torres World Cup final winner Pedro Porro Nico Williams'],
+  source: 'https://rfef.es/es/noticias/espana-vuelve-a-dominar-el-mundo',
+  note: 'ヤマルからポロへつなぎ、ファーへのクロスをニコ・ウィリアムズが頭で落とします。フェランが左足でダイレクトに決めます。退場したアルゼンチンの選手枠はプレーから離してあります。',
+}, 9, [23, 12, 22, 4, 24, 18, 19, 20, 7, 6, 17], [
+  cue(0, 6,
+    ...formation(1, [[-48,0],[12,25],[4,9],[5,-8],[13,-25],[16,1],[22,18],[17,-9],[32,1],[24,3],[24,-23]]),
+    ...formation(-1, [[50,0],[36,-20],[41,-6],[41,7],[37,21],[29,-2],[31,17],[-42,33],[19,0],[27,7],[29,-16]])),
+  cue(1.9, 6, [6,21,2,62], [7,26,17], [2,19,27], [11,28,-23], [-10,28,8]),
+  cue(2.8, 7, [7,28,17,65], [2,26,29], [9,34,1], [-7,31,15]),
+  cue(4.2, 7, [7,32,17,37], [2,35,27], [11,34,-18], [-5,37,21], [-7,32,16]),
+  cue(4.78, 2, [2,39,23,-56], [7,33,16], [9,38,2], [11,38,-16]),
+  cue(5.5, lift(2,2.7), [2,43,21,-83], [9,42,1], [11,42,-13], [-5,42,18], [-1,49.8,1]),
+  cue(7.03, flight(47,-8.4,1.9), [11,46.7,-8.5,118], [9,44,0], [-2,47,-11], [-1,49.4,-2.2]),
+  cue(7.56, flight(44.8,-.2,.35), [9,44.4,-.2,-12], [11,46.9,-8.3], [-1,50,-1.8]),
+  cue(7.95, flight(53.3,-1,2.16), [-1,50.9,-1.25]),
+  cue(10.5, flight(54,-1,.11)),
+], [23, 26, 19, 2, 3, 20, 17, 24, 10, 5, 25]);
+
+export const historicReplays = [
+  wilshere, iniesta, vanPersie, ronaldo, messiMadrid, messiBayern,
+  cabralWorldCup, bellinghamWorldCup, ferranWorldCup,
+];
