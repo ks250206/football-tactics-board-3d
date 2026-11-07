@@ -77,15 +77,17 @@ pnpm run preview
 
 | 場面 | 開始から得点までの流れ | 再生時間 |
 | --- | --- | --- |
-| [13/14 アーセナル対ノリッジ · ウィルシャー](https://arsenal-fc.shorthandstories.com/minute-detail-16-30/index.html) | 自陣で受け直し、カソルラが前進。ジルーとの連続したワンタッチからボレー | 16秒 |
+| [13/14 アーセナル対ノリッジ · ウィルシャー](https://arsenal-fc.shorthandstories.com/minute-detail-16-30/index.html) | 自陣で受け直し、カソルラが左を前進。ウィルシャーがジルーの右を抜けてボレー | 22秒 |
 | [08/09 チェルシー対バルセロナ · イニエスタ](https://www.uefa.com/uefachampionsleague/news/01d9-0e72254a5b3a-23a74c5aeec1-1000/) | バルセロナが押し込み、クリアのこぼれ球をメッシが横へ送り、イニエスタがボックス外から得点 | 11.5秒 |
 | [12/13 マンチェスター・U対アストン・ヴィラ · ファン・ペルシ](https://www.manutd.com/en/news/utd-podcast-van-persie-recalls-2013-aston-villa-hat-trick) | 自陣からルーニーへつなぎ、背後へのロングパスをファン・ペルシが直接ボレー | 11秒 |
 | [11/12 レアル・マドリード対アヤックス · C・ロナウド](https://www.uefa.com/uefachampionsleague/news/0254-0d7d69c526a7-1f168d451a8e-1000--masterful-madrid-too-much-for-ajax/) | ラモスの自陣からの持ち出し、エジルとカカを経由した速攻、ベンゼマのクロスからワンタッチ | 14秒 |
 | [10/11 レアル・マドリード対バルセロナ · メッシ](https://www.uefa.com/uefachampionsleague/news/01f0-0e7810b91a10-94576e9fc2aa-1000--ten-man-madrid-undone-by-messi-magic/) | 中盤で保持し、ブスケツから受けたメッシが複数の守備者をかわして得点 | 12秒 |
 | [14/15 バルセロナ対バイエルン · メッシ](https://www.uefa.com/uefachampionsleague/news/0221-0e909116af7b-fe3ef95b6374-1000--messi-double-puts-barca-in-control-against-bayern/) | 中盤からラキティッチがメッシへ。ボアテングの逆を取り、ノイアーを越すチップ | 11秒 |
-| [25/26 ウェストハム対アーセナル · トロサール](https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race) | ウーデゴールがペナルティーエリアに侵入し、折り返しをトロサールが決める | 6秒 |
+| [25/26 ウェストハム対アーセナル · トロサール](https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race) | 右サイドでのボール回しから、ライスとのワンツーでウーデゴールが侵入し、トロサールに折り返す | 11.5秒 |
 
 選手の位置、経過秒数、ボール軌道と、記録で特定できない前段のつなぎは推定です。共通の選手モデルを使い、退場者に対応する編集用の枠はプレーから離れた位置に置いています。ボアテングの反応は位置と体の向きで表現しています。ウィルシャーとロナウドの前段は、当時の報道と選手本人の回想も参考にしています。[ウィルシャーの回想](https://www.fourfourtwo.com/features/theres-only-two-clubs-that-id-feel-completely-comfortable-walking-in-and-saying-hello-to-everyone-exclusive-jack-wilshere-speaks-to-henry-winter-about-marathons-mistakes-and-managers-hes-worked-with) · [マドリードの速攻のパス順](https://as.com/futbol/2011/09/27/mas_futbol/1317074466_850215.html)
+
+ウィルシャーのボール接触位置は公開されているイベント図を参考にしました。トロサールの場面はライスとのワンツーの前から始めています。[ノリッジ戦のイベント図（図1）](https://rss.org.uk/RSS/media/File-library/Events/Discussion%20meetings/Flexible_MSTPP_Football-1_1.pdf#page=6) · [ウェストハム戦の得点経過](https://www.theguardian.com/football/live/2026/may/10/west-ham-united-v-arsenal-premier-league-live?page=with%3Ablock-6a00b9068f08f695b7fc12e5)
 
 収録されていない場面やオリジナルの練習も、AIが選手とボールのキーフレームを組み立ててプレビューできます。試合資料を使う場合は、AIに元資料や分かっている動きを伝えてください。TOUCHLINE内のツールはタブ内で動き、収録済み見本の一覧と、入力された配置の検証・プレビューを扱います。
 
@@ -216,6 +218,8 @@ Three.jsとTailwindは通常のパッケージ依存です。Vite+は`vite-plus`
 「学習済みxG」「xGヒートマップ」「シュートコース」は独立したトグルで、初期OFFです。adamsaidane/xG_modelの学習済みXGBoostモデルを使い、ボール位置・GK位置・射線内の相手人数から、オープンプレーの足によるシュートのxGをブラウザ内で計算します。以前の未学習の説明用スコアはUIでは使いません。
 
 ヒートマップは相手配置を固定した仮想の地上シュートを攻撃側ハーフに表示します。2Dのシュートコースと3Dのゴール面は、直立円柱による静的な遮蔽判定です。空き面積の割合は得点率・ブロック率・セーブ率ではなく、xGとは別の指標です。
+
+攻撃側はボールの保持チームを基準にします。パスなどで保持者がいない間は直前の保持チームを引き継ぎ、相手が受け取った時点で切り替えます。保持の記録がまだない時刻と視点固定中は、視点の選手のチームを使います。
 
 初回の `pnpm run dev` / `pnpm run build` / `pnpm test` 時に、固定revisionとハッシュで検証したモデル約4 MBを取得します。以降は検証済みキャッシュを再利用します。配信時はモデルとMITライセンスも `dist/` に含まれ、ブラウザから外部モデルAPIへの通信や戦術データの送信はありません。モデルを取得できない場合は明示的にエラーとし、説明用スコアへ自動で戻しません。
 

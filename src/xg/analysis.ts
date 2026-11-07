@@ -29,11 +29,17 @@ export interface Request { key: string; snapshot: Snapshot; heatmap: boolean }
 export interface Response extends AnalysisResult { key: string; team: Team; time: number }
 export type ModelSet = Record<ModelId, Booster>;
 
-/** Locking the camera also locks the attack direction, independent of edit selection. */
+/** Preserve the last possession through free-ball frames and timeline seeks. */
 export function analysisTeam(project: Project, frame: Frame, focused: string, locked: boolean): Team {
   const viewer = project.roster.find(p => p.id === focused) ?? project.roster[0];
-  const owner = project.roster.find(p => p.id === frame.ball.owner);
-  return locked ? viewer.team : owner?.team ?? viewer.team;
+  if (locked) return viewer.team;
+
+  let ownerId = frame.ball.owner;
+  for (let i = project.frames.length - 1; !ownerId && i >= 0; i--) {
+    const key = project.frames[i];
+    if (key.t <= frame.t) ownerId = key.ball.owner;
+  }
+  return project.roster.find(p => p.id === ownerId)?.team ?? viewer.team;
 }
 
 /** Capture only analysis inputs: pose orientation and ball arc must not invalidate xG.

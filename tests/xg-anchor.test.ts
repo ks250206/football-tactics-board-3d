@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { createDemo, type Team } from '../src/core';
+import { createDemo, sample, type Team } from '../src/core';
 import { analysisTeam, snapshot } from '../src/xg/analysis';
 import { shotGeometry } from '../src/xg/geometry';
 import { XgOverlay3D } from '../src/xg/Overlay3D';
@@ -15,6 +15,27 @@ function fixture(team: Team) {
   frame.ball = { x: sign * 40.48, z: 0, y: .11, owner: null, arc: 0 };
   return { project, frame, sign, opponent, focused: `${team}-6` };
 }
+it('keeps the last possession team across free-ball keys and scrubbing until possession changes', () => {
+  const project = createDemo();
+  const first = project.frames[0];
+  project.frames = [
+    { ...first, t: 0, ball: { ...first.ball, owner: null } },
+    { ...first, t: 2, ball: { ...first.ball, owner: 'away-6' } },
+    { ...first, t: 4, ball: { ...first.ball, owner: null } },
+    { ...first, t: 6, ball: { ...first.ball, owner: 'away-7' } },
+    { ...first, t: 12, ball: { ...first.ball, owner: 'home-8' } },
+  ];
+  const attack = (t: number, locked = false) => analysisTeam(project, sample(project, t), 'home-6', locked);
+  expect(attack(0)).toBe('home');
+  expect(attack(3)).toBe('away');
+  expect(attack(4)).toBe('away');
+  expect(attack(5)).toBe('away');
+  expect(attack(11)).toBe('away');
+  expect(attack(12)).toBe('home');
+  expect(attack(5)).toBe('away');
+  expect(attack(5, true)).toBe('home');
+});
+
 describe.each(['home', 'away'] as const)('locked %s analysis subject', team => {
   it('locks direction for free balls and even when an opponent owns the ball', () => {
     const f = fixture(team);

@@ -37,9 +37,11 @@ describe('WebMCP sequence authoring', () => {
 
   it('sends the ball from the assister to Trossard and between the posts', () => {
     const project = createTrossardReplay();
-    expect(sample(project, 2.5).ball.owner).toBe('away-10');
-    expect(sample(project, 3.1).ball.owner).toBe('away-11');
-    const goal = sample(project, 3.65).ball;
+    expect([0, 2.4, 5, 5.65, 8.25].map(t => sample(project, t).ball.owner))
+      .toEqual(['away-2', 'away-10', 'away-2', 'away-10', 'away-11']);
+    expect(sample(project, 0).ball.x).toBeGreaterThan(-20);
+    expect(project.roster.find(player => player.id === 'away-2')?.number).toBe(41);
+    const goal = sample(project, 8.8).ball;
     expect(goal.x).toBeLessThan(-52.5);
     expect(Math.abs(goal.z)).toBeLessThan(3.66);
     expect(goal.y).toBeLessThan(2.44);
@@ -68,12 +70,17 @@ describe('historical match replays', () => {
     },
   );
 
-  it('starts the Wilshere move deep in Arsenal territory and advances before the quick exchanges', () => {
+  it('starts in Arsenal territory and sends Wilshere past Giroud on the attacking right', () => {
     const wilshere = matchReplays.find(replay => replay.info.id.endsWith('wilshere-18'))!.create();
     expect(sample(wilshere, 0).ball.x).toBeLessThan(-25);
-    expect(sample(wilshere, 7.5).ball.x).toBeGreaterThan(0);
-    expect(sample(wilshere, 12.87).ball.owner).toBe('home-9');
-    expect(sample(wilshere, 13.16).ball.owner).toBe('home-10');
-    expect(sample(wilshere, 13.44).ball.owner).toBe('home-9');
+    expect(sample(wilshere, 12.2).ball.x).toBeGreaterThan(0);
+    expect([17.5, 17.85, 18.35].map(t => sample(wilshere, t).ball.owner))
+      .toEqual(['home-9', 'home-10', 'home-9']);
+    const release = sample(wilshere, 18.35);
+    const volley = sample(wilshere, 19.4);
+    expect(release.players['home-10'].z).toBeGreaterThan(release.players['home-9'].z);
+    expect(volley.players['home-10'].z).toBeGreaterThan(volley.players['home-9'].z);
+    expect(volley.players['home-10'].x).toBeGreaterThan(volley.players['home-9'].x);
+    expect(volley.ball.y).toBeGreaterThan(.11);
   });
 });

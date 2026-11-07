@@ -70,7 +70,7 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
   await expect(title).toHaveValue(original);
 
   expect(await callTool(page, 'touchline_preview_replay', { replayId })).toMatchObject({
-    status: 'awaiting_user_confirmation', duration: 6, keyframes: 6,
+    status: 'awaiting_user_confirmation', duration: 11.5, keyframes: 11,
   });
   await expect(dialog).toContainText('トロサール 83分');
   await expect(dialog.getByRole('link', { name: '公式レポート' })).toBeVisible();
@@ -90,7 +90,7 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
 
   const wilshere = catalog.replays.find((replay: { id: string }) => replay.id.endsWith('wilshere-18'));
   expect(await callTool(page, 'touchline_preview_replay', { replayId: wilshere.id })).toMatchObject({
-    status: 'awaiting_user_confirmation', duration: 16,
+    status: 'awaiting_user_confirmation', duration: 22,
   });
   await expect(dialog).toContainText('ウィルシャー 18分');
   await dialog.getByRole('button', { name: 'キャンセル' }).click();
@@ -106,4 +106,7 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
   const start = await page.getByTestId('ball-token').getAttribute('transform');
   expect(start).toMatch(/^translate\(-/);
   await page.screenshot({ path: 'artifacts/webmcp-wilshere-start.png' });
+  await page.getByRole('button', { name: 'ボール キーフレーム 19.4秒', exact: true }).press('Enter');
+  await expect(page.getByTestId('timecode')).toContainText('19.40');
+  await page.screenshot({ path: 'artifacts/webmcp-wilshere-volley.png' });
 });
