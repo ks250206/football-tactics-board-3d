@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { sample } from '../src/core';
+import { ballPosition, parseProject, sample } from '../src/core';
 import { authorSequence } from '../src/webmcp/sequence';
-import { createTrossardReplay } from '../src/webmcp/replays';
+import { createTrossardReplay, matchReplays } from '../src/webmcp/replays';
 
 describe('WebMCP sequence authoring', () => {
   it('expands sparse updates and hands possession to the receiver', () => {
@@ -43,5 +43,37 @@ describe('WebMCP sequence authoring', () => {
     expect(goal.x).toBeLessThan(-52.5);
     expect(Math.abs(goal.z)).toBeLessThan(3.66);
     expect(goal.y).toBeLessThan(2.44);
+  });
+});
+
+describe('historical match replays', () => {
+  it.each(matchReplays.slice(1).map((entry, i) => [entry.info.id, entry, [10, 8, 20, 7, 10, 10][i]] as const))(
+    '%s keeps the scorer selectable and the shot inside the goal mouth',
+    (_id, replay, shirt) => {
+      const project = replay.create();
+      expect(parseProject(JSON.stringify(project))).toEqual(project);
+      const scorer = project.roster.find(player => player.id === replay.focus)!;
+      expect(scorer.number).toBe(shirt);
+      const direction = scorer.team === 'home' ? 1 : -1;
+      const goalIndex = project.frames.findIndex(frame => direction * frame.ball.x > 52.5);
+      const release = project.frames[goalIndex - 1];
+      const goal = project.frames[goalIndex];
+      expect(release.t).toBeGreaterThan(8);
+      const ball = ballPosition(release);
+      expect(Math.hypot(ball.x - release.players[scorer.id].x, ball.z - release.players[scorer.id].z)).toBeLessThan(.6);
+      const fraction = (52.5 - direction * ball.x) / (direction * (goal.ball.x - ball.x));
+      const crossing = sample(project, release.t + fraction * (goal.t - release.t)).ball;
+      expect(Math.abs(crossing.z)).toBeLessThan(3.66);
+      expect(crossing.y).toBeLessThan(2.44);
+    },
+  );
+
+  it('starts the Wilshere move deep in Arsenal territory and advances before the quick exchanges', () => {
+    const wilshere = matchReplays.find(replay => replay.info.id.endsWith('wilshere-18'))!.create();
+    expect(sample(wilshere, 0).ball.x).toBeLessThan(-25);
+    expect(sample(wilshere, 7.5).ball.x).toBeGreaterThan(0);
+    expect(sample(wilshere, 12.87).ball.owner).toBe('home-9');
+    expect(sample(wilshere, 13.16).ball.owner).toBe('home-10');
+    expect(sample(wilshere, 13.44).ball.owner).toBe('home-9');
   });
 });

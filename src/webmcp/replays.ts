@@ -1,16 +1,22 @@
 import type { Project } from '../core';
+import { historicReplays, type Replay } from './historicReplays';
 import { authorSequence } from './sequence';
 
-export const trossardReplay = {
+const trossardReplay = {
   id: 'pl-2025-26-west-ham-arsenal-trossard-83',
   title: '25/26 ウェストハム対アーセナル · トロサール 83分',
   match: '2026-05-10 · Premier League · West Ham United 0–1 Arsenal',
   event: '83rd minute: Leandro Trossard scores, assisted by Martin Ødegaard.',
   aliases: ['25/26 ウェストハム vs アーセナル トロサール', 'West Ham vs Arsenal 2025/26 Trossard goal'],
   source: 'https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race',
-  note: 'ウーデゴールの侵入とラストパスからトロサールが決める流れ。位置・軌道・経過秒は公式記事をもとにした推定で、ユニフォームは共通モデルです。',
+  note: 'ウーデゴールの侵入とラストパスからトロサールが決めます。',
   accuracy: 'Illustrative reconstruction with estimated positions, ball path and timing. No tracking feed.',
 };
+
+export const matchReplays: readonly Replay[] = [
+  { info: trossardReplay, focus: 'away-11', create: createTrossardReplay },
+  ...historicReplays,
+];
 
 export function createTrossardReplay(): Project {
   const home: [number, number][] = [

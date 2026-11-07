@@ -33,6 +33,7 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
   const catalog = await callTool(page, 'touchline_list_replays');
   const replayId = 'pl-2025-26-west-ham-arsenal-trossard-83';
   expect(catalog.replays[0]).toMatchObject({ id: replayId, match: expect.stringContaining('2026-05-10') });
+  expect(catalog.replays).toHaveLength(7);
 
   const invalid = await callTool(page, 'touchline_preview_sequence', {
     name: 'Invalid', duration: 2, keyframes: [
@@ -81,4 +82,23 @@ test('native WebMCP previews an editable match replay and accepts sparse custom 
   await expect(page.getByTestId('timecode')).not.toHaveText(time);
   await page.getByRole('button', { name: '元に戻す', exact: true }).click();
   await expect(title).toHaveValue(original);
+
+  const wilshere = catalog.replays.find((replay: { id: string }) => replay.id.endsWith('wilshere-18'));
+  expect(await callTool(page, 'touchline_preview_replay', { replayId: wilshere.id })).toMatchObject({
+    status: 'awaiting_user_confirmation', duration: 16,
+  });
+  await expect(dialog).toContainText('ウィルシャー 18分');
+  await dialog.getByRole('button', { name: 'キャンセル' }).click();
+
+  await page.getByRole('button', { name: 'シナリオ', exact: true }).click();
+  const select = dialog.getByLabel('シナリオの種類');
+  await expect(select.locator('optgroup[label="試合の再現"] option')).toHaveCount(7);
+  await select.selectOption('replay:' + wilshere.id);
+  await confirm.check();
+  await apply.click();
+  await expect(title).toHaveValue(/ウィルシャー 18分/);
+  await expect(page.getByTestId('stage')).toHaveAttribute('data-camera-player', 'home-10');
+  const start = await page.getByTestId('ball-token').getAttribute('transform');
+  expect(start).toMatch(/^translate\(-/);
+  await page.screenshot({ path: 'artifacts/webmcp-wilshere-start.png' });
 });

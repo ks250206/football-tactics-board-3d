@@ -73,7 +73,19 @@ pnpm run preview
 2. AIに「このTOUCHLINEで、25/26のウェストハム対アーセナルのトロサールの決勝ゴールを再現して」と指示します。AIは収録済みの場面を探し、シーケンスのプレビューを開けます。
 3. 配置を確認して「シーケンス全体の置き換えを確認しました」にチェックし、「シーケンスを置き換える」を押します。時間軸の再生ボタンで動きを確認できます。適用前はキャンセル、適用後は「元に戻す」が使えます。
 
-「シナリオ」→「試合の再現」からも同じ見本を選べます。2026年5月10日のウェストハム戦で、ウーデゴールのアシストからトロサールが83分に決めた流れを、6秒の編集可能なシーンにしています。選手の位置、軌道、各動作の秒数は推定で、共通の選手モデルを使います。[公式試合記録](https://www.premierleague.com/en/match/2562254/west-ham-united-vs-arsenal/table) · [公式解説](https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race)
+「シナリオ」→「試合の再現」からも、同じ編集可能な場面を選べます。
+
+| 場面 | 開始から得点までの流れ | 再生時間 |
+| --- | --- | --- |
+| [13/14 アーセナル対ノリッジ · ウィルシャー](https://arsenal-fc.shorthandstories.com/minute-detail-16-30/index.html) | 自陣で受け直し、カソルラが前進。ジルーとの連続したワンタッチからボレー | 16秒 |
+| [08/09 チェルシー対バルセロナ · イニエスタ](https://www.uefa.com/uefachampionsleague/news/01d9-0e72254a5b3a-23a74c5aeec1-1000/) | バルセロナが押し込み、クリアのこぼれ球をメッシが横へ送り、イニエスタがボックス外から得点 | 11.5秒 |
+| [12/13 マンチェスター・U対アストン・ヴィラ · ファン・ペルシ](https://www.manutd.com/en/news/utd-podcast-van-persie-recalls-2013-aston-villa-hat-trick) | 自陣からルーニーへつなぎ、背後へのロングパスをファン・ペルシが直接ボレー | 11秒 |
+| [11/12 レアル・マドリード対アヤックス · C・ロナウド](https://www.uefa.com/uefachampionsleague/news/0254-0d7d69c526a7-1f168d451a8e-1000--masterful-madrid-too-much-for-ajax/) | ラモスの自陣からの持ち出し、エジルとカカを経由した速攻、ベンゼマのクロスからワンタッチ | 14秒 |
+| [10/11 レアル・マドリード対バルセロナ · メッシ](https://www.uefa.com/uefachampionsleague/news/01f0-0e7810b91a10-94576e9fc2aa-1000--ten-man-madrid-undone-by-messi-magic/) | 中盤で保持し、ブスケツから受けたメッシが複数の守備者をかわして得点 | 12秒 |
+| [14/15 バルセロナ対バイエルン · メッシ](https://www.uefa.com/uefachampionsleague/news/0221-0e909116af7b-fe3ef95b6374-1000--messi-double-puts-barca-in-control-against-bayern/) | 中盤からラキティッチがメッシへ。ボアテングの逆を取り、ノイアーを越すチップ | 11秒 |
+| [25/26 ウェストハム対アーセナル · トロサール](https://www.premierleague.com/en/news/4654073/odegaard-and-raya-rise-to-the-occasion-to-keep-arsenal-in-control-of-title-race) | ウーデゴールがペナルティーエリアに侵入し、折り返しをトロサールが決める | 6秒 |
+
+選手の位置、経過秒数、ボール軌道と、記録で特定できない前段のつなぎは推定です。共通の選手モデルを使い、退場者に対応する編集用の枠はプレーから離れた位置に置いています。ボアテングの反応は位置と体の向きで表現しています。ウィルシャーとロナウドの前段は、当時の報道と選手本人の回想も参考にしています。[ウィルシャーの回想](https://www.fourfourtwo.com/features/theres-only-two-clubs-that-id-feel-completely-comfortable-walking-in-and-saying-hello-to-everyone-exclusive-jack-wilshere-speaks-to-henry-winter-about-marathons-mistakes-and-managers-hes-worked-with) · [マドリードの速攻のパス順](https://as.com/futbol/2011/09/27/mas_futbol/1317074466_850215.html)
 
 収録されていない場面やオリジナルの練習も、AIが選手とボールのキーフレームを組み立ててプレビューできます。試合資料を使う場合は、AIに元資料や分かっている動きを伝えてください。TOUCHLINE内のツールはタブ内で動き、収録済み見本の一覧と、入力された配置の検証・プレビューを扱います。
 

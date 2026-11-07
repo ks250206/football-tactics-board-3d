@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { Project } from '../core';
-import { createTrossardReplay, trossardReplay } from './replays';
+import { matchReplays } from './replays';
 import { authorSequence, sequenceSchema } from './sequence';
 
 export interface ScenarioPreview {
@@ -35,25 +35,26 @@ export function useScenarioTools(openPreview: (preview: ScenarioPreview) => void
     const tools: WebMCP.ModelContextTool[] = [
       {
         name: 'touchline_list_replays',
-        description: 'List the match moments TOUCHLINE can replay. Call this first when asked to recreate a real match event. Includes the Trossard winner against West Ham in 2025/26.',
+        description: 'List the match moments TOUCHLINE can replay. Call this first when asked to recreate a real match event.',
         inputSchema: { type: 'object', properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true },
-        execute: () => ({ replays: [trossardReplay] }),
+        execute: () => ({ replays: matchReplays.map(replay => replay.info) }),
       },
       {
         name: 'touchline_preview_replay',
         description: 'Open an editable replay of a catalogued real match moment. The user reviews and applies the preview before playback.',
         inputSchema: {
           type: 'object', required: ['replayId'], additionalProperties: false,
-          properties: { replayId: { type: 'string', enum: [trossardReplay.id] } },
+          properties: { replayId: { type: 'string', enum: matchReplays.map(replay => replay.info.id) } },
         },
         execute: (input, options) => preview(() => {
-          if (input.replayId !== trossardReplay.id) throw new Error('Unknown replayId. Call touchline_list_replays.');
+          const replay = matchReplays.find(entry => entry.info.id === input.replayId);
+          if (!replay) throw new Error('Unknown replayId. Call touchline_list_replays.');
           return {
-            project: createTrossardReplay(),
-            note: trossardReplay.note,
-            source: trossardReplay.source,
-            focus: 'away-11',
+            project: replay.create(),
+            note: replay.info.note,
+            source: replay.info.source,
+            focus: replay.focus,
           };
         }, options?.signal),
       },
