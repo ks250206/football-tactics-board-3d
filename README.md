@@ -2,6 +2,8 @@
 
 サッカーの **2D戦術ボード / 選手の一人称3D / キーフレーム時間軸** を同期する、ブラウザ完結の戦術スタジオ。
 
+**[TOUCHLINEを開く](https://ks250206.github.io/football-tactics-board-3d/)**（初回公開後に利用できます）
+
 **Vite+ · React · TypeScript · Tailwind CSS 4 · Three.js · Node 26 · pnpm 12**
 
 ## 画面
