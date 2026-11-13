@@ -28,6 +28,11 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm run build
+      - name: Prepare Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
       - name: Source archive
         if: always()
         run: |
@@ -42,6 +47,21 @@ jobs:
             dist/
             artifacts/
           retention-days: 14
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [studio, browser]
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
   browser:
     name: Browser and rendering tests (${{ matrix.shard }}/3)
     needs: studio
