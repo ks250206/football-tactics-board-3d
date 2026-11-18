@@ -34,8 +34,8 @@ export interface Athlete {
 const SKIN = ["#b47d56", "#633d29", "#dab18c", "#8b593c", "#e0bea0"];
 const FACES: FaceShape[] = [
   { jaw: 1, nose: 1, brow: 1, cheek: 1 },
-  { jaw: 1.07, nose: 1.12, brow: 1.2, cheek: 0.8 },
-  { jaw: 0.94, nose: 0.92, brow: 0.85, cheek: 1.2 },
+  { jaw: 1.05, nose: 1.12, brow: 1.2, cheek: 0.92 },
+  { jaw: 0.94, nose: 0.92, brow: 0.85, cheek: 1.06 },
 ];
 const HAIR_STYLES: HairStyle[] = ["crop", "buzz", "textured", "crop", "curls", "buzz", "shaved", "textured"];
 const HAIR_COLOURS = ["#15130f", "#15130f", "#2e2014", "#15130f", "#4a3420"];
@@ -131,14 +131,14 @@ function paintFace(c: CanvasRenderingContext2D, look: Look, size: number): void 
     soft(s * 0.079, -0.012, -0.018, 0.034, 0.07, tint(skin, "#c2452f", 0.5), 0.22);
     soft(s * 0.031, 0.004, 0.08, 0.05, 0.034, shade(skin, 0.55), 0.5, 0.25);
     // Ear: a shaded bowl inside a darker rim.
-    soft(s * 0.084, -0.012, -0.012, 0.014, 0.036, shade(skin, 0.38), 0.75, 0.2);
-    const [ex, ey] = at(s * 0.08, -0.008, -0.02),
-      [esx, esy] = scale(s * 0.08, -0.008, -0.02);
+    soft(s * 0.081, -0.012, -0.013, 0.013, 0.033, shade(skin, 0.38), 0.75, 0.2);
+    const [ex, ey] = at(s * 0.078, -0.008, -0.02),
+      [esx, esy] = scale(s * 0.078, -0.008, -0.02);
     c.strokeStyle = shade(skin, 0.6);
     c.globalAlpha = 0.55;
     c.lineWidth = 0.0022 * esy;
     c.beginPath();
-    c.ellipse(ex, ey, 0.013 * esx, 0.027 * esy, 0, 0, Math.PI * 2);
+    c.ellipse(ex, ey, 0.012 * esx, 0.025 * esy, 0, 0, Math.PI * 2);
     c.stroke();
     c.globalAlpha = 1;
   }

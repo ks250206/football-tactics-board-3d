@@ -672,26 +672,39 @@ export interface FaceShape {
   brow: number;
   cheek: number;
 }
-/** Head primitives relative to the head centre (eye line near y = 0, face towards +z). */
+/**
+ * Head primitives relative to the head centre (eye line near y = 0, face towards +z).
+ *
+ * The lower face follows the mandible rather than stacking rounded masses: each side runs from the
+ * cheekbone down the ramus to the jaw angle, then forwards along the jaw to the chin. Blend radii
+ * stay small because every smooth union pushes the surface outwards by up to a quarter of its radius;
+ * large ones add up to a swollen, featureless outline. Target half-widths, front view: 73 mm at the
+ * eyes, 63 mm below the cheekbones, 57 mm at the mouth, 50 mm at the jaw angle.
+ */
 function headPrims(shape: FaceShape): Prim[] {
   const j = shape.jaw,
     n = shape.nose;
   const sides = (prims: Prim[]) => [...prims, ...mirror(prims)];
+  const zygoma: V3 = [0.043, -0.02, 0.015],
+    gonion: V3 = [0.034 * j, -0.078, 0.0],
+    chin: V3 = [0.012 * j, -0.096, 0.05];
   return [
     E(0, 0.022, -0.014, 0.0765, 0.092, 0.098, 0), // cranium
-    E(0, -0.036, 0.02, 0.062 * j, 0.074, 0.064, 0.045), // facial mass
-    E(0, -0.092, 0.051, 0.027 * j, 0.023, 0.027, 0.03), // chin
-    ...sides([E(0.04 * j, -0.074, 0.004, 0.015, 0.024, 0.026, 0.03)]), // jaw angle
-    ...sides([E(0.047, -0.022, 0.042, 0.024, 0.02, 0.03, 0.035 * shape.cheek)]), // cheekbone
-    ...sides([E(0.05, -0.036, -0.012, 0.021, 0.042, 0.036, 0.04)]), // ramus and mastoid, below the ear
+    E(0, -0.042, 0.026, 0.046, 0.062, 0.057, 0.02), // maxilla and the front of the mandible
+    ...sides([C(zygoma, gonion, 0.021, 0.014 * j, 0.018)]), // ramus, under the masseter
+    ...sides([C(gonion, chin, 0.014 * j, 0.019, 0.018)]), // body of the mandible
+    ...sides([E(0.034, -0.052, 0.032, 0.02, 0.036, 0.03, 0.022)]), // cheek, between the mouth and the masseter
+    E(0, -0.095, 0.052, 0.025 * j, 0.02, 0.024, 0.014), // chin
+    ...sides([E(0.039, -0.026, 0.04, 0.022 * shape.cheek, 0.024, 0.028, 0.022)]), // cheekbone
+    ...sides([E(0.04, -0.03, -0.02, 0.018, 0.035, 0.028, 0.02)]), // mastoid, behind the jaw below the ear
     C([-0.033, 0.023, 0.073], [0.033, 0.023, 0.073], 0.012 * shape.brow, 0.012 * shape.brow, 0.02), // brow ridge
     ...sides([cut(E(0.031, 0.001, 0.094, 0.021, 0.0135, 0.017, 0.012))]), // eye sockets
     ...sides([E(0.031, 0.001, 0.0655, 0.0128, 0.0125, 0.0128, 0.006)]), // eyeball under the lids
     C([0, 0.012, 0.079], [0, -0.034, 0.104], 0.0055 * n, 0.0092 * n, 0.012), // nose
     ...sides([E(0.0105 * n, -0.039, 0.089, 0.0068 * n, 0.0062, 0.0085, 0.007)]), // alae
     E(0, -0.066, 0.066, 0.03, 0.02, 0.022, 0.02), // mouth
-    ...sides([E(0.077, -0.008, -0.018, 0.0065, 0.031, 0.019, 0.004, [0, 0.62, 0])]), // ears
-    ...sides([cut(E(0.086, -0.012, -0.012, 0.006, 0.014, 0.008, 0.004))]), // concha
+    ...sides([E(0.0745, -0.008, -0.018, 0.006, 0.029, 0.018, 0.004, [0, 0.5, 0])]), // ears
+    ...sides([cut(E(0.083, -0.012, -0.013, 0.0055, 0.013, 0.0075, 0.004))]), // concha
   ];
 }
 
