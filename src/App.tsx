@@ -18,7 +18,7 @@ import { shotGeometry } from './xg/geometry';
 import { useXg } from './xg/useXg';
 import { XgPanel } from './xg/Panel';
 import { EMPTY_VISUALS, type XgVisuals } from './xg/visuals';
-import { applyFpsInput, applyShape, bakeDefence, defencePlan, orientPlayers, resolveDefence, withBallGaze, type FpsInput, type LookAlignment, type LookTarget, type ShapeSettings } from './tactics';
+import { applyFpsInput, applyShape, bakeDefence, defencePlan, displayFrame, orientPlayers, type FpsInput, type LookAlignment, type LookTarget, type ShapeSettings } from './tactics';
 import type { StageHandle } from './Stage';
 const Stage=lazy(()=>import('./Stage').then(module=>({default:module.Stage})));
 const STORAGE='touchline.project.v1';
@@ -61,8 +61,7 @@ export default function App(){
   const focusedSafe=cameraLocked?lockedPlayer!:selectedSafe;
   const focusedPlayer=project.roster.find(p=>p.id===focusedSafe)!;
   const frame=useMemo(()=>{
-    const resolved=resolveDefence(project,sample(project,time));
-    return settings.ballLook&&!settings.fps?withBallGaze(resolved,settings.eye):resolved;
+    return displayFrame(project,time,{ballLook:settings.ballLook,fps:settings.fps,eye:settings.eye});
   },[project,time,settings.ballLook,settings.fps,settings.eye]),pose=frame.players[selectedSafe];
   const player=project.roster.find(p=>p.id===selectedSafe)!;
   const sights=useMemo(()=>analyse(project,frame,focusedSafe,settings.fov,settings.eye,aspect),[project,frame,focusedSafe,settings.fov,settings.eye,aspect]);

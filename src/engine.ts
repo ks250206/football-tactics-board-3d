@@ -10,10 +10,11 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
-import { createAthlete, createBall, type Athlete } from './athlete';
+import { createAthleteFactory, createBall, type Athlete } from './athlete';
+import { planMotion, type MotionPlan } from './motion';
 import { createWorld } from './world';
-import { BIELSA_ZONES, LANE_ZONES, resolveDefence } from './tactics';
-import { distance, RAD, sample, verticalFov, type Frame, type Project, type Quality, type ViewSettings } from './core';
+import { BIELSA_ZONES, LANE_ZONES, displayFrame, resolveDefence } from './tactics';
+import { RAD, sample, verticalFov, type Frame, type Project, type Quality, type ViewSettings } from './core';
 
 function disposeObject(root:T.Object3D) {
   const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>(),textures=new Set<T.Texture>();
@@ -58,6 +59,9 @@ export class TacticsEngine {
   private settings:ViewSettings;
   private lastProject:Project|null=null;
   private lastSelected='';
+  private plan:MotionPlan|null=null;
+  private planKey='';
+  private planProject:Project|null=null;
   private statsAt=0;
   private ticks=0;
   private needsRender=true;
@@ -79,6 +83,7 @@ export class TacticsEngine {
     room.dispose();pmrem.dispose();
     this.world=createWorld(this.renderer,quality);this.scene.add(this.world.root);
     this.scene.fog=new T.FogExp2('#d9d2b9',.0038);
+    const createAthlete=createAthleteFactory(quality);
     for(const player of project.roster){const athlete=createAthlete(player);this.athletes.set(player.id,athlete);this.scene.add(athlete.root);}
     this.scene.add(this.ball);
     for(const zone of LANE_ZONES){
@@ -121,13 +126,12 @@ export class TacticsEngine {
   private apply(){
     const {project,frame,selected,settings}=this;
     const p=frame.players[selected];if(!p)return;
-    const a=resolveDefence(project,sample(project,Math.max(0,frame.t-.04))),b=resolveDefence(project,sample(project,Math.min(project.duration,frame.t+.04)));
-    const dt=Math.max(.001,b.t-a.t);
+    const motion=this.motion();
     let selectedSpeed=0;
     this.athletes.forEach((athlete,id)=>{
-      const speed=distance(a.players[id],b.players[id])/dt;
-      athlete.pose(frame.players[id],frame.t,speed);athlete.label.visible=settings.labels;
-      athlete.root.visible=!(settings.camera==='eye'&&id===selected);if(id===selected)selectedSpeed=speed;
+      const state=motion.sample(id,frame.t);
+      athlete.pose(frame.players[id],state,frame.t);athlete.label.visible=settings.labels;
+      athlete.root.visible=!(settings.camera==='eye'&&id===selected);if(id===selected)selectedSpeed=state.speed;
     });
     this.lanes.visible=settings.lanes;this.bielsa.visible=settings.bielsa;
     this.ball.position.set(frame.ball.x,frame.ball.y,frame.ball.z);this.ball.rotation.set(frame.ball.z/.11,0,-frame.ball.x/.11);
@@ -160,6 +164,15 @@ export class TacticsEngine {
     }
     this.lastMode=settings.camera;
   }
+  /** Gait plan for the timeline exactly as displayed; rebuilt only when that timeline changes. */
+  private motion(){
+    const {project,settings}=this,key=`${settings.ballLook}|${settings.fps}|${settings.eye}`;
+    if(!this.plan||this.planProject!==project||this.planKey!==key){
+      this.plan=planMotion({roster:project.roster,duration:project.duration,keys:project.frames.map(f=>({t:f.t,owner:f.ball.owner})),frameAt:t=>displayFrame(project,t,settings)});
+      this.planProject=project;this.planKey=key;
+    }
+    return this.plan;
+  }
   private animate=()=>{
     if(this.disposed)return;
     if(this.controls.enabled)this.controls.update();
@@ -173,6 +186,7 @@ export class TacticsEngine {
   capture(){this.apply();this.composer.render();this.canvas.dispatchEvent(new Event('touchline-frame'));return this.canvas.toDataURL('image/png');}
   dispose(){
     this.disposed=true;cancelAnimationFrame(this.animation);this.resizeObserver.disconnect();this.canvas.removeEventListener('touchline-capture-request',this.captureRequest);this.controls.dispose();
+    this.athletes.forEach(athlete=>athlete.dispose());
     for(const pass of this.composer.passes)pass.dispose();this.composer.dispose();disposeObject(this.scene);this.environment.dispose();this.renderer.dispose();this.renderer.forceContextLoss();this.canvas.remove();
   }
 }
