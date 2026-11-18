@@ -6,6 +6,7 @@ import {
   clone,
   distance,
   RAD,
+  sample,
   upsert,
   wrap,
   type DefencePlan,
@@ -201,6 +202,16 @@ export function withBallGaze(frame: Frame, eye: number): Frame {
     if (id !== frame.ball.owner) players[id] = gazeAtBall(pose, ball, eye);
   }
   return { ...frame, players, ball };
+}
+
+/** The frame as displayed: resolved defence, then optional ball gaze. Shared by every view. */
+export function displayFrame(
+  project: Project,
+  time: number,
+  view: { ballLook: boolean; fps: boolean; eye: number },
+): Frame {
+  const resolved = resolveDefence(project, sample(project, time));
+  return view.ballLook && !view.fps ? withBallGaze(resolved, view.eye) : resolved;
 }
 
 export function defencePlan(
